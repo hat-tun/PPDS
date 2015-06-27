@@ -182,6 +182,7 @@ void CDepthBasics::Update()
         UINT nBufferSize = 0;
         UINT16 *pBuffer = NULL;
 
+
         hr = pDepthFrame->get_RelativeTime(&nTime);
 
         if (SUCCEEDED(hr))
@@ -214,18 +215,25 @@ void CDepthBasics::Update()
             //// hr = pDepthFrame->get_DepthMaxReliableDistance(&nDepthMaxDistance);
         }
 
+		cv::Mat bufferMat(nHeight, nWidth, CV_16UC1);
+		cv::Mat depthMat(nHeight, nWidth, CV_8UC1);
+
         if (SUCCEEDED(hr))
         {
-            hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);            
+#if !defined(USE_OPENCV)
+            hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
+#else
+            hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, reinterpret_cast<UINT16**>(&bufferMat.data));            
+#endif
         }
 
         if (SUCCEEDED(hr))
         {
-			cv::Mat bufferMat(nHeight, nWidth, CV_16UC1);
-			cv::Mat depthMat(nHeight, nWidth, CV_8UC1);
-            ProcessDepth(nTime, pBuffer, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
-			depthMat.data = (uchar*)pBuffer;
-            cv::imshow("Depth", depthMat);
+            ProcessDepth(nTime, (UINT16*)bufferMat.data, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
+#if defined(USE_OPENCV)
+			bufferMat.convertTo(depthMat, CV_8U, -255.0f / 8000.0f, 255.0f);
+            cv::imshow("Depth", ~depthMat);
+#endif
         }
 
         SafeRelease(pFrameDescription);
@@ -431,7 +439,8 @@ void CDepthBasics::ProcessDepth(INT64 nTime, const UINT16* pBuffer, int nWidth, 
 
             // Note: Using conditionals in this loop could degrade performance.
             // Consider using a lookup table instead when writing production code.
-            BYTE intensity = static_cast<BYTE>((depth >= nMinDepth) && (depth <= nMaxDepth) ? (depth % 256) : 0);
+//            BYTE intensity = static_cast<BYTE>((depth >= nMinDepth) && (depth <= nMaxDepth) ? (depth % 256) : 0);
+            BYTE intensity = static_cast<BYTE>((depth >= nMinDepth) && (depth <= nMaxDepth) ? (depth * 256 / 8000) : 0);
 
             pRGBX->rgbRed   = intensity;
             pRGBX->rgbGreen = intensity;
