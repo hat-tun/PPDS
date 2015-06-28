@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //------------------------------------------------------------------------------
-//#define USE_OPENCV
+#define USE_OPENCV
 
 #include "stdafx.h"
 #include <strsafe.h>
@@ -14,6 +14,7 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 #endif
+
 /// <summary>
 /// Entry point for the application
 /// </summary>
@@ -137,12 +138,38 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 	cv::namedWindow("Edge");
 	cv::namedWindow("Binary");
 	cv::namedWindow("Result");
+
+	// init params
+	ParamSet param;
+	param.binThresh = 100;
+	param.canny.Thresh1 = 70;
+	param.canny.Thresh2 = 150;
+	param.line.rho = 1;
+	param.line.theta = CV_PI / 180.f;
+	param.line.thresh = 80;
+	param.line.srn = 0;
+	param.line.stn = 0;
+	param.circle.dp = 1;
+	param.circle.minDist = 200;
+	param.circle.param1 = 20;
+	param.circle.param2 = 50;
+	param.circle.minRadius = 30;
+	param.circle.maxRadius = 200;
+	cv::createTrackbar("BinThresh", "Binary", &param.binThresh, 255);
+	cv::createTrackbar("Canny1", "Edge", &param.canny.Thresh1, 255);
+	cv::createTrackbar("Canny2", "Edge", &param.canny.Thresh2, 255);
+	cv::createTrackbar("LineThresh", "Result", &param.line.thresh, 255);
+	cv::createTrackbar("CircleMinDist", "Result", &param.circle.minDist, 255);
+	cv::createTrackbar("CircleParam1", "Result", &param.circle.param1, 255);
+	cv::createTrackbar("CircleParam2", "Result", &param.circle.param2, 255);
+	cv::createTrackbar("CircleMinRad", "Result", &param.circle.minRadius, 255);
+	cv::createTrackbar("CircleMaxRad", "Result", &param.circle.maxRadius, 255);
 #endif
 
     // Main message loop
     while (WM_QUIT != msg.message)
     {
-        Update();
+        Update(param);
 
         while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
         {
@@ -171,7 +198,7 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 /// <summary>
 /// Main processing function
 /// </summary>
-void CDepthBasics::Update()
+void CDepthBasics::Update(ParamSet& param)
 {
     if (!m_pDepthFrameReader)
     {
@@ -249,13 +276,14 @@ void CDepthBasics::Update()
 			const int destHeight = 150;
 			cv::Mat roiMat(depthMat, cv::Rect((nWidth - destWidth) / 2, (nHeight - destHeight) / 2, destWidth, destHeight));
 			cv::Mat binMat;
-			cv::threshold(roiMat, binMat, 0, 255, cv::THRESH_BINARY|cv::THRESH_OTSU);
+			cv::threshold(roiMat, binMat, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+			//cv::threshold(roiMat, binMat, param.binThresh, 255, cv::THRESH_BINARY);
 			cv::Mat edgeMat;
-			cv::Canny(binMat, edgeMat, 70, 150);
+			cv::Canny(binMat, edgeMat, param.canny.Thresh1, param.canny.Thresh2);
 			cv::Mat resultMat(destHeight, destWidth, CV_8UC1, cvScalar(0));
 
 			std::vector<cv::Vec2f> lines;
-			cv::HoughLines(edgeMat, lines, 1, CV_PI / 180.0f, 80, 0, 0);
+			cv::HoughLines(edgeMat, lines, param.line.rho, param.line.theta, param.line.thresh, param.line.srn, param.line.stn);
             std::vector<cv::Vec2f>::iterator it = lines.begin();
             cv::Point p1, p2;
 			double rho, theta , a, b, x0, y0;
@@ -275,7 +303,7 @@ void CDepthBasics::Update()
 			}
 
 			std::vector<cv::Vec3f> circles;
-			cv::HoughCircles(edgeMat, circles, CV_HOUGH_GRADIENT, 1, 200, 20, 50, 30, 200);
+			cv::HoughCircles(edgeMat, circles, CV_HOUGH_GRADIENT, param.circle.dp, param.circle.minDist, param.circle.param1, param.circle.param2, param.circle.minRadius, param.circle.maxRadius);
 			std::vector<cv::Vec3f>::iterator iterCircle = circles.begin();
 			for (; iterCircle!= circles.end(); ++iterCircle) {
 				cv::Point center(cv::saturate_cast<int>((*iterCircle)[0]), cv::saturate_cast<int>((*iterCircle)[1]));
