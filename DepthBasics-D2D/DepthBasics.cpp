@@ -155,6 +155,12 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
+
+		int key = cv::waitKey(50);
+		if (key > 0)
+		{
+			break;
+		}
     }
 
 
