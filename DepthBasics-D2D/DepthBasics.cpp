@@ -12,6 +12,7 @@
 #if defined(USE_OPENCV)
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
+#include "opencv2/imgproc.hpp"
 #endif
 /// <summary>
 /// Entry point for the application
@@ -133,6 +134,9 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 
 #if defined (USE_OPENCV)
 	cv::namedWindow("Depth");
+	cv::namedWindow("Edge");
+	cv::namedWindow("Binary");
+	cv::namedWindow("Result");
 #endif
 
     // Main message loop
@@ -232,17 +236,59 @@ void CDepthBasics::Update()
             ProcessDepth(nTime, (UINT16*)bufferMat.data, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
 #if defined(USE_OPENCV)
 			bufferMat.convertTo(depthMat, CV_8U, -255.0f / 8000.0f, 255.0f);
-            cv::imshow("Depth", ~depthMat);
-#endif
-        }
+			cv::Mat binMat;
+			cv::threshold(depthMat, binMat, 0, 255, cv::THRESH_BINARY|cv::THRESH_OTSU);
+			cv::Mat edgeMat;
+			cv::Canny(binMat, edgeMat, 70, 150);
+			cv::Mat resultMat(nHeight, nWidth, CV_8UC1, cvScalar(0));
+#if 0
+			std::vector<cv::Vec2f> lines;
+			cv::HoughLines(edgeMat, lines, 1, CV_PI / 180.0f, 80, 0, 0);
+            std::vector<cv::Vec2f>::iterator it = lines.begin();
+            cv::Point p1, p2;
+			double rho, theta , a, b, x0, y0;
+			// draw line
+			for (; it != lines.end(); ++it) {
+				rho = (*it)[0];
+				theta = (*it)[1];
+				a = cos(theta);
+				b = sin(theta);
+				x0 = a*rho;
+				y0 = b*rho;
+				p1.x = cv::saturate_cast<int>(x0 + 1000 * (-b));
+				p1.y = cv::saturate_cast<int>(y0 + 1000 * (a));
+				p2.x = cv::saturate_cast<int>(x0 - 1000 * (-b));
+				p2.y = cv::saturate_cast<int>(y0 - 1000 * (a));
+				line(resultMat, p1, p2, cv::Scalar(255), 1, CV_AA);
+			}
 
-        SafeRelease(pFrameDescription);
-    }
+#endif			
+			std::vector<cv::Vec3f> circles;
+			cv::HoughCircles(edgeMat, circles, CV_HOUGH_GRADIENT, 1, 200, 20, 50, 30, 200);
+			std::vector<cv::Vec3f>::iterator iterCircle = circles.begin();
+			for (; iterCircle!= circles.end(); ++iterCircle) {
+				cv::Point center(cv::saturate_cast<int>((*iterCircle)[0]), cv::saturate_cast<int>((*iterCircle)[1]));
+				int radius = cv::saturate_cast<int>((*iterCircle)[2]);
+				circle(resultMat, center, radius, cv::Scalar(255), 2);
+			}
+			
+			cv::imshow("Edge", edgeMat);
+			cv::imshow("Binary", binMat);
+			cv::imshow("Depth", ~depthMat);
+			cv::imshow("Result", resultMat);
+#endif
+		}
+		
+		SafeRelease(pFrameDescription);
+	}
 
 
 
     SafeRelease(pDepthFrame);
 }
+
+
+
 
 /// <summary>
 /// Handles window messages, passes most to the class instance to handle
