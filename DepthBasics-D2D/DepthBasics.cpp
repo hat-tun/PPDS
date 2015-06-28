@@ -250,7 +250,7 @@ void CDepthBasics::Update()
 			cv::Mat edgeMat;
 			cv::Canny(binMat, edgeMat, 70, 150);
 			cv::Mat resultMat(destHeight, destWidth, CV_8UC1, cvScalar(0));
-#if 0
+
 			std::vector<cv::Vec2f> lines;
 			cv::HoughLines(edgeMat, lines, 1, CV_PI / 180.0f, 80, 0, 0);
             std::vector<cv::Vec2f>::iterator it = lines.begin();
@@ -271,7 +271,6 @@ void CDepthBasics::Update()
 				line(resultMat, p1, p2, cv::Scalar(255), 1, CV_AA);
 			}
 
-#endif			
 			std::vector<cv::Vec3f> circles;
 			cv::HoughCircles(edgeMat, circles, CV_HOUGH_GRADIENT, 1, 200, 20, 50, 30, 200);
 			std::vector<cv::Vec3f>::iterator iterCircle = circles.begin();
