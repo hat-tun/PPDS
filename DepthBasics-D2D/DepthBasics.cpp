@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //------------------------------------------------------------------------------
-#define USE_OPENCV
+//#define USE_OPENCV
 
 #include "stdafx.h"
 #include <strsafe.h>
@@ -155,12 +155,13 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
-
+#if defined(USE_OPENCV)
 		int key = cv::waitKey(50);
 		if (key > 0)
 		{
 			break;
 		}
+#endif
     }
 
 
@@ -225,10 +226,12 @@ void CDepthBasics::Update()
             //// hr = pDepthFrame->get_DepthMaxReliableDistance(&nDepthMaxDistance);
         }
 
+#if defined(USE_OPENCV)
 		cv::Mat bufferMat(nHeight, nWidth, CV_16UC1);
 		cv::Mat depthMat(nHeight, nWidth, CV_8UC1);
-
-        if (SUCCEEDED(hr))
+#endif
+		
+		if (SUCCEEDED(hr))
         {
 #if !defined(USE_OPENCV)
             hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
@@ -239,8 +242,8 @@ void CDepthBasics::Update()
 
         if (SUCCEEDED(hr))
         {
-            ProcessDepth(nTime, (UINT16*)bufferMat.data, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
 #if defined(USE_OPENCV)
+			ProcessDepth(nTime, (UINT16*)bufferMat.data, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
 			bufferMat.convertTo(depthMat, CV_8U, -255.0f / 8000.0f, 255.0f);
 			const int destWidth = 200;
 			const int destHeight = 150;
@@ -284,6 +287,8 @@ void CDepthBasics::Update()
 			cv::imshow("Binary", binMat);
 			cv::imshow("Depth", ~depthMat);
 			cv::imshow("Result", resultMat);
+#else
+			ProcessDepth(nTime, pBuffer, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
 #endif
 		}
 		
