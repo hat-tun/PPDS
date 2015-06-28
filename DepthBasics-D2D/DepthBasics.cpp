@@ -146,13 +146,13 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 	param.canny.Thresh2 = 150;
 	param.line.rho = 1;
 	param.line.theta = CV_PI / 180.f;
-	param.line.thresh = 80;
+	param.line.thresh = 70;
 	param.line.srn = 0;
 	param.line.stn = 0;
 	param.circle.dp = 1;
 	param.circle.minDist = 200;
-	param.circle.param1 = 20;
-	param.circle.param2 = 50;
+	param.circle.param1 = 10;
+	param.circle.param2 = 20;
 	param.circle.minRadius = 30;
 	param.circle.maxRadius = 200;
 	cv::createTrackbar("BinThresh", "Binary", &param.binThresh, 255);
