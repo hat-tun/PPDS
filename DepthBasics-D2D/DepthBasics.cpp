@@ -236,11 +236,14 @@ void CDepthBasics::Update()
             ProcessDepth(nTime, (UINT16*)bufferMat.data, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
 #if defined(USE_OPENCV)
 			bufferMat.convertTo(depthMat, CV_8U, -255.0f / 8000.0f, 255.0f);
+			const int destWidth = 200;
+			const int destHeight = 150;
+			cv::Mat roiMat(depthMat, cv::Rect((nWidth - destWidth) / 2, (nHeight - destHeight) / 2, destWidth, destHeight));
 			cv::Mat binMat;
-			cv::threshold(depthMat, binMat, 0, 255, cv::THRESH_BINARY|cv::THRESH_OTSU);
+			cv::threshold(roiMat, binMat, 0, 255, cv::THRESH_BINARY|cv::THRESH_OTSU);
 			cv::Mat edgeMat;
 			cv::Canny(binMat, edgeMat, 70, 150);
-			cv::Mat resultMat(nHeight, nWidth, CV_8UC1, cvScalar(0));
+			cv::Mat resultMat(destHeight, destWidth, CV_8UC1, cvScalar(0));
 #if 0
 			std::vector<cv::Vec2f> lines;
 			cv::HoughLines(edgeMat, lines, 1, CV_PI / 180.0f, 80, 0, 0);
