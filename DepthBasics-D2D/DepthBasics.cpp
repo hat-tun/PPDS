@@ -10,6 +10,8 @@
 #include <strsafe.h>
 #include "resource.h"
 #include "DepthBasics.h"
+#include <stdio.h>
+#include <stdlib.h>
 #if defined(USE_OPENCV)
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
@@ -142,7 +144,7 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 
 	// init params
 	ParamSet param;
-	param.binThresh = 100;
+	param.binThresh = 230;
 	param.canny.Thresh1 = 70;
 	param.canny.Thresh2 = 150;
 	param.line.rho = 1;
@@ -154,7 +156,7 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 	param.circle.minDist = 200;
 	param.circle.param1 = 10;
 	param.circle.param2 = 20;
-	param.circle.minRadius = 30;
+	param.circle.minRadius = 10;
 	param.circle.maxRadius = 200;
 	cv::createTrackbar("BinThresh", "Binary", &param.binThresh, 255);
 	cv::createTrackbar("Canny1", "Edge", &param.canny.Thresh1, 255);
@@ -298,8 +300,8 @@ void CDepthBasics::Update(ParamSet& param)
 			const int destHeight = 150;
 			cv::Mat roiMat(depthMat, cv::Rect((nWidth - destWidth) / 2, (nHeight - destHeight) / 2, destWidth, destHeight));
 			cv::Mat binMat;
-			cv::threshold(roiMat, binMat, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-			//cv::threshold(roiMat, binMat, param.binThresh, 255, cv::THRESH_BINARY);
+			//cv::threshold(roiMat, binMat, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+			cv::threshold(roiMat, binMat, param.binThresh, 255, cv::THRESH_BINARY);
 			cv::Mat edgeMat;
 			cv::Canny(binMat, edgeMat, param.canny.Thresh1, param.canny.Thresh2);
 			cv::Mat resultMat(destHeight, destWidth, CV_8UC1, cvScalar(0));
@@ -324,21 +326,79 @@ void CDepthBasics::Update(ParamSet& param)
 				line(resultMat, p1, p2, cv::Scalar(255), 1, CV_AA);
 			}
 
+
+			cv::Point circlePos(0, 0);
+			int circleRadius = 0;
+
+			const int AVE_BUFFER_MAX = 5;
+			static cv::Point aveCirclePos[AVE_BUFFER_MAX] = {0};
+			static int aveCircleRadius[AVE_BUFFER_MAX] = {0};
+			static int aveIndex = 0;
+			static int circleFailureCounter = 0;
+			static int circleSuccessCounter = 0;
+
 			std::vector<cv::Vec3f> circles;
 			cv::HoughCircles(edgeMat, circles, CV_HOUGH_GRADIENT, param.circle.dp, param.circle.minDist, param.circle.param1, param.circle.param2, param.circle.minRadius, param.circle.maxRadius);
 			std::vector<cv::Vec3f>::iterator iterCircle = circles.begin();
 			for (; iterCircle!= circles.end(); ++iterCircle) {
 				cv::Point center(cv::saturate_cast<int>((*iterCircle)[0]), cv::saturate_cast<int>((*iterCircle)[1]));
 				int radius = cv::saturate_cast<int>((*iterCircle)[2]);
-				circle(resultMat, center, radius, cv::Scalar(255), 2);
+
 #ifdef PRINT_LOG
 				fprintf(fp, "X:%d, Y:%d, R:%d\n", center.x, center.y, radius);
 #endif
+				if (circles.size() == 1)
+				{
+					aveCirclePos[aveIndex] = center;
+					aveCircleRadius[aveIndex] = radius;
+					aveIndex++;
+					aveIndex %= AVE_BUFFER_MAX;
+				}
+			}
+
+			if (circles.size() == 0)
+			{
+				circleFailureCounter++;
+			}
+			else
+			{
+				circleSuccessCounter++;
 			}
 			
+			const int FAILURE_COUNT = 30;
+			if (circleFailureCounter > FAILURE_COUNT)
+			{
+				circleFailureCounter = 0;
+				circleSuccessCounter = 0;
+				for (int i = 0; i < AVE_BUFFER_MAX; i++)
+				{
+					aveCirclePos[i].x = 0;
+					aveCirclePos[i].y = 0;
+					aveCircleRadius[i] = 0;
+				}
+			}
+			else if (circleFailureCounter > 0)
+			{
+				//moving average
+				int sumX = 0;
+				int sumY = 0;
+				int sumR = 0;
+				for (int i = 0; i < AVE_BUFFER_MAX; i++)
+				{
+					sumX += aveCirclePos[i].x;
+					sumY += aveCirclePos[i].y;
+					sumR += aveCircleRadius[i];
+				}
+
+				circlePos.x = sumX / AVE_BUFFER_MAX;
+				circlePos.y = sumY / AVE_BUFFER_MAX;
+				circleRadius = sumR / AVE_BUFFER_MAX;
+
+				circle(resultMat, circlePos, circleRadius, cv::Scalar(255), 2);
+			}
 			cv::imshow("Edge", edgeMat);
 			cv::imshow("Binary", binMat);
-			cv::imshow("Depth", ~depthMat);
+			cv::imshow("Depth", ~roiMat);
 			cv::imshow("Result", resultMat);
 #else
 			ProcessDepth(nTime, pBuffer, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
