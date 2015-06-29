@@ -110,7 +110,11 @@ private:
     /// <summary>
     /// Main processing function
     /// </summary>
-    void                    Update(ParamSet& param);
+#ifdef PRINT_LOG
+    void                    Update(ParamSet& param, FILE* fp);
+#else
+	void                    Update(ParamSet& param);
+#endif
 
     /// <summary>
     /// Initializes the default Kinect sensor

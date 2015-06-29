@@ -4,6 +4,7 @@
 // </copyright>
 //------------------------------------------------------------------------------
 #define USE_OPENCV
+//#define PRINT_LOG
 
 #include "stdafx.h"
 #include <strsafe.h>
@@ -166,10 +167,24 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 	cv::createTrackbar("CircleMaxRad", "Result", &param.circle.maxRadius, 255);
 #endif
 
-    // Main message loop
+#ifdef PRINT_LOG
+	//fileOpen
+	FILE* fp;
+	fp = fopen("c:\\Users\\hattun\\Desktop\\circle.log", "a");
+	if (fp == NULL)
+	{
+		perror("Couldn't open file\n");
+		exit(0);
+	}
+#endif
+	// Main message loop
     while (WM_QUIT != msg.message)
     {
+#ifdef PRINT_LOG
+        Update(param, fp);
+#else
         Update(param);
+#endif
 
         while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
         {
@@ -191,6 +206,9 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 #endif
     }
 
+#ifdef PRINT_LOG
+	fclose(fp);
+#endif
 
     return static_cast<int>(msg.wParam);
 }
@@ -198,7 +216,11 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 /// <summary>
 /// Main processing function
 /// </summary>
+#ifdef PRINT_LOG
+void CDepthBasics::Update(ParamSet& param, FILE* fp)
+#else
 void CDepthBasics::Update(ParamSet& param)
+#endif
 {
     if (!m_pDepthFrameReader)
     {
@@ -309,6 +331,9 @@ void CDepthBasics::Update(ParamSet& param)
 				cv::Point center(cv::saturate_cast<int>((*iterCircle)[0]), cv::saturate_cast<int>((*iterCircle)[1]));
 				int radius = cv::saturate_cast<int>((*iterCircle)[2]);
 				circle(resultMat, center, radius, cv::Scalar(255), 2);
+#ifdef PRINT_LOG
+				fprintf(fp, "X:%d, Y:%d, R:%d\n", center.x, center.y, radius);
+#endif
 			}
 			
 			cv::imshow("Edge", edgeMat);
