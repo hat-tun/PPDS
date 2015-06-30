@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 #define USE_OPENCV
 //#define PRINT_LOG
+#define HOUGH_LINES_P
 
 #include "stdafx.h"
 #include <strsafe.h>
@@ -152,6 +153,8 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 	param.line.thresh = 70;
 	param.line.srn = 0;
 	param.line.stn = 0;
+	param.line.minLineLength = 10;
+	param.line.maxLineGap = 200;
 	param.circle.dp = 1;
 	param.circle.minDist = 200;
 	param.circle.param1 = 10;
@@ -162,6 +165,8 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 	cv::createTrackbar("Canny1", "Edge", &param.canny.Thresh1, 255);
 	cv::createTrackbar("Canny2", "Edge", &param.canny.Thresh2, 255);
 	cv::createTrackbar("LineThresh", "Result", &param.line.thresh, 255);
+	cv::createTrackbar("LineMinLength", "Result", &param.line.minLineLength, 255);
+	cv::createTrackbar("LineMaxGap", "Result", &param.line.maxLineGap, 255);
 	cv::createTrackbar("CircleMinDist", "Result", &param.circle.minDist, 255);
 	cv::createTrackbar("CircleParam1", "Result", &param.circle.param1, 255);
 	cv::createTrackbar("CircleParam2", "Result", &param.circle.param2, 255);
@@ -291,8 +296,8 @@ void CDepthBasics::Update(ParamSet& param)
 #endif
         }
 
-        if (SUCCEEDED(hr))
-        {
+		if (SUCCEEDED(hr))
+		{
 #if defined(USE_OPENCV)
 			ProcessDepth(nTime, (UINT16*)bufferMat.data, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
 			bufferMat.convertTo(depthMat, CV_8U, -255.0f / 8000.0f, 255.0f);
@@ -300,12 +305,23 @@ void CDepthBasics::Update(ParamSet& param)
 			const int destHeight = 150;
 			cv::Mat roiMat(depthMat, cv::Rect((nWidth - destWidth) / 2, (nHeight - destHeight) / 2, destWidth, destHeight));
 			cv::Mat binMat;
-			//cv::threshold(roiMat, binMat, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-			cv::threshold(roiMat, binMat, param.binThresh, 255, cv::THRESH_BINARY);
+			cv::threshold(roiMat, binMat, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+			//cv::threshold(roiMat, binMat, param.binThresh, 255, cv::THRESH_BINARY);
 			cv::Mat edgeMat;
 			cv::Canny(binMat, edgeMat, param.canny.Thresh1, param.canny.Thresh2);
 			cv::Mat resultMat(destHeight, destWidth, CV_8UC1, cvScalar(0));
 
+
+#ifdef HOUGH_LINES_P
+			std::vector<cv::Vec4i> lines;
+			cv::HoughLinesP(edgeMat, lines, param.line.rho, param.line.theta, param.line.thresh, param.line.minLineLength, param.line.maxLineGap);
+			for (size_t i = 0; i < lines.size(); i++)
+			{
+				line(resultMat, cv::Point(lines[i][0], lines[i][1]),
+					cv::Point(lines[i][2], lines[i][3]), cv::Scalar(255), 1, CV_AA);
+			}
+			
+#else
 			std::vector<cv::Vec2f> lines;
 			cv::HoughLines(edgeMat, lines, param.line.rho, param.line.theta, param.line.thresh, param.line.srn, param.line.stn);
             std::vector<cv::Vec2f>::iterator it = lines.begin();
@@ -325,6 +341,8 @@ void CDepthBasics::Update(ParamSet& param)
 				p2.y = cv::saturate_cast<int>(y0 - 1000 * (a));
 				line(resultMat, p1, p2, cv::Scalar(255), 1, CV_AA);
 			}
+#endif
+
 
 
 			cv::Point circlePos(0, 0);

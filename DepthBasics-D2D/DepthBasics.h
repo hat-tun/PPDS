@@ -66,6 +66,8 @@ private:
 		int thresh;
 		int srn;
 		int stn;
+		int minLineLength;
+		int maxLineGap;
 	};
 
 	struct HoughCircleParam
