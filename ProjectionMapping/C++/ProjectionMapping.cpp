@@ -573,6 +573,25 @@ void DrawGrid( PrimitiveBatch<VertexPositionColor>& batch, FXMVECTOR xAxis, FXMV
     g_Batch->End();
 }
 
+void DrawCircle(SpriteBatch& batch, ID3D11ShaderResourceView* texture, XMFLOAT2 center, FLOAT radius, FLOAT percentage, FLOAT circleWidth, GXMVECTOR color)
+{
+	batch.Begin(SpriteSortMode_Deferred);
+
+	const XMFLOAT2 top_base = XMFLOAT2(0, -1.0f);
+	//Texture Size
+	RECT rect = { 0, 0, circleWidth, circleWidth};
+
+	for (int i = 0; i < (int)percentage; i++)
+	{
+		FLOAT rad = XM_2PI * i / 100.f;
+		XMFLOAT2 point;
+		point.x = sin(rad) * radius + center.x;
+		point.y = cos(rad) * radius + center.y;
+		batch.Draw(g_pTextureRV2, point, &rect, color);
+	}
+
+    batch.End();
+}
 
 //--------------------------------------------------------------------------------------
 // Render a frame
@@ -635,9 +654,17 @@ void Render()
     const XMVECTORF32 yaxis = { 0.f, 20.f, 0.f };
     DrawGrid( *g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray );
 
+	// Draw Circle
+	XMFLOAT2 center = XMFLOAT2(300,300);
+	FLOAT radius = 30;
+	FLOAT percent = 100;
+	FLOAT circleWidth = 5.0f;
+	DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, percent, circleWidth, Colors::Silver);
+
     // Draw sprite
     g_Sprites->Begin( SpriteSortMode_Deferred );
-    g_Sprites->Draw( g_pTextureRV2, XMFLOAT2(10, 75 ), nullptr, Colors::White );
+	RECT rect = { 0, 0, 10, 10 };
+	g_Sprites->Draw(g_pTextureRV2, XMFLOAT2(10, 75), &rect, Colors::White);
 
     g_Font->DrawString( g_Sprites.get(), L"DirectXTK ProjectionMapping", XMFLOAT2( 100, 10 ), Colors::Yellow );
     g_Sprites->End();
