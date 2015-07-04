@@ -341,15 +341,16 @@ HRESULT InitDevice()
     g_World = XMMatrixIdentity();
 
     // Initialize the view matrix
-    XMVECTOR Eye = XMVectorSet( 0.0f, 3.0f, -6.0f, 0.0f );
-    XMVECTOR At = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
+	FLOAT EyePosition = -10.0f;
+    XMVECTOR Eye = XMVectorSet( 0.0f, 0.0f, EyePosition, 0.0f );
+    XMVECTOR At = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
     XMVECTOR Up = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
     g_View = XMMatrixLookAtLH( Eye, At, Up );
 
     g_BatchEffect->SetView( g_View );
 
     // Initialize the projection matrix
-    g_Projection = XMMatrixPerspectiveFovLH( XM_PIDIV4, width / (FLOAT)height, 0.01f, 100.0f );
+    g_Projection = XMMatrixPerspectiveFovLH( atan2(20.0f * height / (FLOAT)width, -EyePosition) * 2.0f, width / (FLOAT)height, 0.01f, 100.0f );
 
     g_BatchEffect->SetProjection( g_Projection );
 
@@ -622,7 +623,7 @@ void Render()
     //
     // Clear the back buffer
     //
-    g_pImmediateContext->ClearRenderTargetView( g_pRenderTargetView, Colors::MidnightBlue );
+    g_pImmediateContext->ClearRenderTargetView( g_pRenderTargetView, Colors::Black );
 
     //
     // Clear the depth buffer to 1.0 (max depth)
@@ -631,7 +632,7 @@ void Render()
 
     // Draw procedurally generated dynamic grid
     const XMVECTORF32 xaxis = { 20.f, 0.f, 0.f };
-    const XMVECTORF32 yaxis = { 0.f, 0.f, 20.f };
+    const XMVECTORF32 yaxis = { 0.f, 20.f, 0.f };
     DrawGrid( *g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray );
 
     // Draw sprite
