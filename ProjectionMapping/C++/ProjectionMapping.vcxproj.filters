@@ -19,4 +19,9 @@
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <MeshContentTask Include="dmd.fbx">
+      <Filter>Resource Files</Filter>
+    </MeshContentTask>
+  </ItemGroup>
 </Project>

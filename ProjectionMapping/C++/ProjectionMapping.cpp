@@ -326,7 +326,7 @@ HRESULT InitDevice()
 
     g_Shape = GeometricPrimitive::CreateTeapot( g_pImmediateContext, 4.f, 8, false );
 
-    g_Model = Model::CreateFromSDKMESH( g_pd3dDevice, L"tiny.sdkmesh", *g_FXFactory, true );
+    g_Model = Model::CreateFromCMO( g_pd3dDevice, L"dmd.cmo", *g_FXFactory, true );
 
     // Load the Texture
     hr = CreateDDSTextureFromFile( g_pd3dDevice, L"seafloor.dds", nullptr, &g_pTextureRV1 );
