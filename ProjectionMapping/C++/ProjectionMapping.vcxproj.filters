@@ -12,11 +12,11 @@
     </CLInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="SimpleSample.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
+    <ClCompile Include="ProjectionMapping.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SimpleSample.cpp" />
+    <ResourceCompile Include="ProjectionMapping.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

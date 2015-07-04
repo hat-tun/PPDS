@@ -27,7 +27,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>SimpleSample</ProjectName>
+    <ProjectName>ProjectionMapping</ProjectName>
     <ProjectGuid>{B3B75176-8D81-4E7B-A5D0-C2E5423844D3}</ProjectGuid>
     <RootNamespace>SimpleSample</RootNamespace>
     <Keyword>Win32Proj</Keyword>
@@ -356,10 +356,10 @@
     <CLInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="SimpleSample.rc" />
+    <ResourceCompile Include="ProjectionMapping.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SimpleSample.cpp" />
+    <ClCompile Include="ProjectionMapping.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="DirectXTK\DirectXTK_Desktop_2012.vcxproj">
