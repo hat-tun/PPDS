@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------------------------
-// File: SimpleSample.cpp
+// File: ProjectionMapping.cpp
 //
 // This is a simple Win32 desktop application showing use of DirectXTK
 //
@@ -165,7 +165,7 @@ HRESULT InitWindow( HINSTANCE hInstance, int nCmdShow )
     g_hInst = hInstance;
     RECT rc = { 0, 0, 640, 480 };
     AdjustWindowRect( &rc, WS_OVERLAPPEDWINDOW, FALSE );
-    g_hWnd = CreateWindow( L"SampleWindowClass", L"DirectXTK Simple Sample", WS_OVERLAPPEDWINDOW,
+    g_hWnd = CreateWindow( L"SampleWindowClass", L"DirectXTK ProjectionMapping", WS_OVERLAPPEDWINDOW,
                            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
                            nullptr );
     if( !g_hWnd )
@@ -625,7 +625,7 @@ void Render()
     g_Sprites->Begin( SpriteSortMode_Deferred );
     g_Sprites->Draw( g_pTextureRV2, XMFLOAT2(10, 75 ), nullptr, Colors::White );
 
-    g_Font->DrawString( g_Sprites.get(), L"DirectXTK Simple Sample", XMFLOAT2( 100, 10 ), Colors::Yellow );
+    g_Font->DrawString( g_Sprites.get(), L"DirectXTK ProjectionMapping", XMFLOAT2( 100, 10 ), Colors::Yellow );
     g_Sprites->End();
 
     // Draw 3D object
