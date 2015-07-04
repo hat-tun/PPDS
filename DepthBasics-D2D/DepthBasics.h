@@ -53,6 +53,43 @@ public:
     int                     Run(HINSTANCE hInstance, int nCmdShow);
 
 private:
+	struct CannyParam
+	{
+		int Thresh1;
+		int Thresh2;
+	};
+
+	struct HoughLineParam
+	{
+		float rho;
+		float theta;
+		int thresh;
+		int srn;
+		int stn;
+		int minLineLength;
+		int maxLineGap;
+	};
+
+	struct HoughCircleParam
+	{
+		int dp;
+		int minDist;
+		int param1;
+		int param2;
+		int minRadius;
+		int maxRadius;
+	};
+
+	struct ParamSet
+	{
+		int binThresh;
+		CannyParam canny;
+		HoughLineParam line;
+		HoughCircleParam circle;
+	};
+
+
+
     HWND                    m_hWnd;
     INT64                   m_nStartTime;
     INT64                   m_nLastCounter;
@@ -75,7 +112,11 @@ private:
     /// <summary>
     /// Main processing function
     /// </summary>
-    void                    Update();
+#ifdef PRINT_LOG
+    void                    Update(ParamSet& param, FILE* fp);
+#else
+	void                    Update(ParamSet& param);
+#endif
 
     /// <summary>
     /// Initializes the default Kinect sensor
