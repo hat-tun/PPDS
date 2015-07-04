@@ -15,6 +15,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
+#define WINDOW_PROJECTOR 
 #include <windows.h>
 
 #include <d3d11.h>
@@ -163,11 +164,23 @@ HRESULT InitWindow( HINSTANCE hInstance, int nCmdShow )
 
     // Create window
     g_hInst = hInstance;
-    RECT rc = { 0, 0, 640, 480 };
+
+#if defined(WINDOW_PROJECTOR)
+    RECT rc = { 0, 0, 1920, 1080 };
     AdjustWindowRect( &rc, WS_OVERLAPPEDWINDOW, FALSE );
-    g_hWnd = CreateWindow( L"SampleWindowClass", L"DirectXTK ProjectionMapping", WS_OVERLAPPEDWINDOW,
+	// Full screen mode
+	g_hWnd = CreateWindow(L"SampleWindowClass", L"DirectXTK ProjectionMapping", WS_VISIBLE | WS_POPUP,
+                           0, 0, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
+                           nullptr );
+	
+#else
+    RECT rc = { 0, 0, 1280, 960 };
+    AdjustWindowRect( &rc, WS_OVERLAPPEDWINDOW, FALSE );
+	g_hWnd = CreateWindow(L"SampleWindowClass", L"DirectXTK ProjectionMapping", WS_OVERLAPPEDWINDO,W
                            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
                            nullptr );
+
+#endif
     if( !g_hWnd )
         return E_FAIL;
 
