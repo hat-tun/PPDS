@@ -5,14 +5,23 @@
       <UniqueIdentifier>{8e114980-c1a3-4ada-ad7c-83caadf5daeb}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
     </Filter>
+    <Filter Include="Kinnect">
+      <UniqueIdentifier>{b15c5a52-a8ea-43c8-a6b8-e3825a40ff3f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
       <Filter>Resource Files</Filter>
     </CLInclude>
+    <ClInclude Include="DepthBasics.h">
+      <Filter>Kinnect</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProjectionMapping.cpp" />
+    <ClCompile Include="DepthBasics.cpp">
+      <Filter>Kinnect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ProjectionMapping.rc">

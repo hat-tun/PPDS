@@ -16,6 +16,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #define WINDOW_PROJECTOR 
+#define KINNECT
 #include <windows.h>
 
 #include <d3d11.h>
@@ -41,6 +42,12 @@
 #include "resource.h"
 
 #include <algorithm>
+
+#ifdef KINNECT
+#include "DepthBasics.h"
+#endif
+
+//#include "opencv2/core.hpp"
 
 using namespace DirectX;
 
@@ -92,9 +99,11 @@ XMMATRIX                            g_Projection;
 // Forward declarations
 //--------------------------------------------------------------------------------------
 HRESULT InitWindow( HINSTANCE hInstance, int nCmdShow );
+HRESULT InitKinect( CDepthBasics& kinect );
 HRESULT InitDevice();
 void CleanupDevice();
 LRESULT CALLBACK    WndProc( HWND, UINT, WPARAM, LPARAM );
+void Update(CDepthBasics& kinect);
 void Render();
 
 
@@ -119,10 +128,15 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
+	CDepthBasics kinect;
+	if (FAILED(InitKinect(kinect)))
+		return 0;
+	
     // Main message loop
     MSG msg = {0};
     while( WM_QUIT != msg.message )
     {
+		Update(kinect);
         if( PeekMessage( &msg, nullptr, 0, 0, PM_REMOVE ) )
         {
             TranslateMessage( &msg );
@@ -130,6 +144,7 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         }
         else
         {
+
             Render();
         }
     }
@@ -379,6 +394,11 @@ HRESULT InitDevice()
     return S_OK;
 }
 
+HRESULT InitKinect( CDepthBasics& kinect )
+{
+	return kinect.InitializeDefaultSensor();
+}
+
 
 //--------------------------------------------------------------------------------------
 // Clean up the objects we've created
@@ -594,6 +614,22 @@ void DrawCircle(SpriteBatch& batch, ID3D11ShaderResourceView* texture, XMFLOAT2 
 }
 
 //--------------------------------------------------------------------------------------
+// Update a frame
+//--------------------------------------------------------------------------------------
+void Update(CDepthBasics& kinect)
+{
+	// Update depth image
+	kinect.Update();
+
+}
+
+void ProcessImage()
+{
+
+
+}
+
+//--------------------------------------------------------------------------------------
 // Render a frame
 //--------------------------------------------------------------------------------------
 void Render()
@@ -674,7 +710,7 @@ void Render()
     g_Shape->Draw( local, g_View, g_Projection, Colors::White, g_pTextureRV1 );
 
     XMVECTOR qid = XMQuaternionIdentity();
-    const XMVECTORF32 scale = { 0.01f, 0.01f, 0.01f};
+    const XMVECTORF32 scale = { 0.1f, 0.1f, 0.1f};
     const XMVECTORF32 translate = { 3.f, -2.f, 4.f };
     XMVECTOR rotate = XMQuaternionRotationRollPitchYaw( 0, XM_PI/2.f, XM_PI/2.f );
     local = XMMatrixMultiply( g_World, XMMatrixTransformation( g_XMZero, qid, scale, g_XMZero, rotate, translate ) );
