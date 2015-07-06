@@ -33,43 +33,6 @@ public:
     /// <param name="nCmdShow"></param>
     int                     Run(HINSTANCE hInstance, int nCmdShow);
 
-	struct CannyParam
-	{
-		int Thresh1;
-		int Thresh2;
-	};
-
-	struct HoughLineParam
-	{
-		float rho;
-		float theta;
-		int thresh;
-		int srn;
-		int stn;
-		int minLineLength;
-		int maxLineGap;
-	};
-
-	struct HoughCircleParam
-	{
-		int dp;
-		int minDist;
-		int param1;
-		int param2;
-		int minRadius;
-		int maxRadius;
-	};
-
-	struct ParamSet
-	{
-		int binThresh;
-		CannyParam canny;
-		HoughLineParam line;
-		HoughCircleParam circle;
-	};
-
-
-
     HWND                    m_hWnd;
     INT64                   m_nStartTime;
     INT64                   m_nLastCounter;

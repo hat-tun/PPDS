@@ -17,6 +17,7 @@
 #define NOMINMAX
 #define WINDOW_PROJECTOR 
 #define KINNECT
+#define USE_OPENCV
 #include <windows.h>
 
 #include <d3d11.h>
@@ -47,7 +48,11 @@
 #include "DepthBasics.h"
 #endif
 
-//#include "opencv2/core.hpp"
+#if defined(USE_OPENCV)
+#include "opencv2/core.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/imgproc.hpp"
+#endif
 
 using namespace DirectX;
 
@@ -95,16 +100,56 @@ XMMATRIX                            g_World;
 XMMATRIX                            g_View;
 XMMATRIX                            g_Projection;
 
+
+// Opencv Parameters
+struct CannyParam
+{
+	int Thresh1;
+	int Thresh2;
+};
+
+struct HoughLineParam
+{
+	float rho;
+	float theta;
+	int thresh;
+	int srn;
+	int stn;
+	int minLineLength;
+	int maxLineGap;
+};
+
+struct HoughCircleParam
+{
+	int dp;
+	int minDist;
+	int param1;
+	int param2;
+	int minRadius;
+	int maxRadius;
+};
+
+struct ParamSet
+{
+	int binThresh;
+	CannyParam canny;
+	HoughLineParam line;
+	HoughCircleParam circle;
+};
+
 //--------------------------------------------------------------------------------------
 // Forward declarations
 //--------------------------------------------------------------------------------------
 HRESULT InitWindow( HINSTANCE hInstance, int nCmdShow );
 HRESULT InitKinect( CDepthBasics& kinect );
+HRESULT InitOpencv( ParamSet& param );
 HRESULT InitDevice();
 void CleanupDevice();
 LRESULT CALLBACK    WndProc( HWND, UINT, WPARAM, LPARAM );
 void Update(CDepthBasics& kinect);
 void Render();
+
+
 
 
 //--------------------------------------------------------------------------------------
@@ -132,6 +177,9 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	if (FAILED(InitKinect(kinect)))
 		return 0;
 	
+	ParamSet param;
+	InitOpencv(param);
+
     // Main message loop
     MSG msg = {0};
     while( WM_QUIT != msg.message )
@@ -397,6 +445,46 @@ HRESULT InitDevice()
 HRESULT InitKinect( CDepthBasics& kinect )
 {
 	return kinect.InitializeDefaultSensor();
+}
+
+
+HRESULT InitOpencv(ParamSet& param)
+{
+	cv::namedWindow("Depth");
+	cv::namedWindow("Edge");
+	cv::namedWindow("Binary");
+	cv::namedWindow("Result");
+
+	// init params
+	param.binThresh = 230;
+	param.canny.Thresh1 = 70;
+	param.canny.Thresh2 = 150;
+	param.line.rho = 1;
+	param.line.theta = CV_PI / 180.f;
+	param.line.thresh = 70;
+	param.line.srn = 0;
+	param.line.stn = 0;
+	param.line.minLineLength = 10;
+	param.line.maxLineGap = 200;
+	param.circle.dp = 1;
+	param.circle.minDist = 200;
+	param.circle.param1 = 10;
+	param.circle.param2 = 20;
+	param.circle.minRadius = 10;
+	param.circle.maxRadius = 200;
+	cv::createTrackbar("BinThresh", "Binary", &param.binThresh, 255);
+	cv::createTrackbar("Canny1", "Edge", &param.canny.Thresh1, 255);
+	cv::createTrackbar("Canny2", "Edge", &param.canny.Thresh2, 255);
+	cv::createTrackbar("LineThresh", "Result", &param.line.thresh, 255);
+	cv::createTrackbar("LineMinLength", "Result", &param.line.minLineLength, 255);
+	cv::createTrackbar("LineMaxGap", "Result", &param.line.maxLineGap, 255);
+	cv::createTrackbar("CircleMinDist", "Result", &param.circle.minDist, 255);
+	cv::createTrackbar("CircleParam1", "Result", &param.circle.param1, 255);
+	cv::createTrackbar("CircleParam2", "Result", &param.circle.param2, 255);
+	cv::createTrackbar("CircleMinRad", "Result", &param.circle.minRadius, 255);
+	cv::createTrackbar("CircleMaxRad", "Result", &param.circle.maxRadius, 255);
+
+	return S_OK;
 }
 
 

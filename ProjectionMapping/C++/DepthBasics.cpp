@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //------------------------------------------------------------------------------
-//#define USE_OPENCV
+
 //#define PRINT_LOG
 #define HOUGH_LINES_P
 
@@ -13,11 +13,6 @@
 #include "DepthBasics.h"
 #include <stdio.h>
 #include <stdlib.h>
-#if defined(USE_OPENCV)
-#include "opencv2/core.hpp"
-#include "opencv2/highgui.hpp"
-#include "opencv2/imgproc.hpp"
-#endif
 
 // Safe release for interfaces
 template<class Interface>
@@ -131,42 +126,6 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
     // Show window
     ShowWindow(hWndApp, nCmdShow);
 
-#if defined (USE_OPENCV)
-	cv::namedWindow("Depth");
-	cv::namedWindow("Edge");
-	cv::namedWindow("Binary");
-	cv::namedWindow("Result");
-
-	// init params
-	ParamSet param;
-	param.binThresh = 230;
-	param.canny.Thresh1 = 70;
-	param.canny.Thresh2 = 150;
-	param.line.rho = 1;
-	param.line.theta = CV_PI / 180.f;
-	param.line.thresh = 70;
-	param.line.srn = 0;
-	param.line.stn = 0;
-	param.line.minLineLength = 10;
-	param.line.maxLineGap = 200;
-	param.circle.dp = 1;
-	param.circle.minDist = 200;
-	param.circle.param1 = 10;
-	param.circle.param2 = 20;
-	param.circle.minRadius = 10;
-	param.circle.maxRadius = 200;
-	cv::createTrackbar("BinThresh", "Binary", &param.binThresh, 255);
-	cv::createTrackbar("Canny1", "Edge", &param.canny.Thresh1, 255);
-	cv::createTrackbar("Canny2", "Edge", &param.canny.Thresh2, 255);
-	cv::createTrackbar("LineThresh", "Result", &param.line.thresh, 255);
-	cv::createTrackbar("LineMinLength", "Result", &param.line.minLineLength, 255);
-	cv::createTrackbar("LineMaxGap", "Result", &param.line.maxLineGap, 255);
-	cv::createTrackbar("CircleMinDist", "Result", &param.circle.minDist, 255);
-	cv::createTrackbar("CircleParam1", "Result", &param.circle.param1, 255);
-	cv::createTrackbar("CircleParam2", "Result", &param.circle.param2, 255);
-	cv::createTrackbar("CircleMinRad", "Result", &param.circle.minRadius, 255);
-	cv::createTrackbar("CircleMaxRad", "Result", &param.circle.maxRadius, 255);
-#endif
 
 #ifdef PRINT_LOG
 	//fileOpen
@@ -184,7 +143,7 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 #ifdef PRINT_LOG
         Update(param, fp);
 #else
-        Update(param);
+		Update(param);
 #endif
 
         while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
@@ -295,7 +254,6 @@ void CDepthBasics::Update()
 		if (SUCCEEDED(hr))
 		{
 #if defined(USE_OPENCV)
-			ProcessDepth(nTime, (UINT16*)bufferMat.data, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
 			bufferMat.convertTo(depthMat, CV_8U, -255.0f / 8000.0f, 255.0f);
 			const int destWidth = 200;
 			const int destHeight = 150;
