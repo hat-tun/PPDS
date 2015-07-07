@@ -15,7 +15,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-#define WINDOW_PROJECTOR 
+//#define WINDOW_PROJECTOR 
 #define KINNECT
 
 #include <windows.h>
@@ -98,6 +98,10 @@ XMMATRIX                            g_World;
 XMMATRIX                            g_View;
 XMMATRIX                            g_Projection;
 
+
+FLOAT g_CenterX = 0.f;
+FLOAT g_CenterY = 0.f;
+FLOAT g_Radius = 0.f;
 
 //--------------------------------------------------------------------------------------
 // Forward declarations
@@ -201,7 +205,7 @@ HRESULT InitWindow( HINSTANCE hInstance, int nCmdShow )
 #else
     RECT rc = { 0, 0, 1280, 960 };
     AdjustWindowRect( &rc, WS_OVERLAPPEDWINDOW, FALSE );
-	g_hWnd = CreateWindow(L"SampleWindowClass", L"DirectXTK ProjectionMapping", WS_OVERLAPPEDWINDO,W
+	g_hWnd = CreateWindow(L"SampleWindowClass", L"DirectXTK ProjectionMapping", WS_OVERLAPPEDWINDOW,
                            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
                            nullptr );
 
@@ -652,9 +656,9 @@ void DrawCircle(SpriteBatch& batch, ID3D11ShaderResourceView* texture, XMFLOAT2 
 	//Texture Size
 	RECT rect = { 0, 0, circleWidth, circleWidth};
 
-	for (int i = 0; i < (int)percentage; i++)
+	for (int i = 0; i < (int)percentage * 10; i++)
 	{
-		FLOAT rad = XM_2PI * i / 100.f;
+		FLOAT rad = XM_2PI * i / 1000.f;
 		XMFLOAT2 point;
 		point.x = sin(rad) * radius + center.x;
 		point.y = cos(rad) * radius + center.y;
@@ -744,8 +748,10 @@ void Render()
     DrawGrid( *g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray );
 
 	// Draw Circle
-	XMFLOAT2 center = XMFLOAT2(300,300);
-	FLOAT radius = 30;
+	FLOAT ratio = 1280 / 200.f;
+	FLOAT offsetY = 200;
+	XMFLOAT2 center = XMFLOAT2(1280 - g_CenterX * ratio, g_CenterY * ratio + offsetY);
+	FLOAT radius = g_Radius * ratio;
 	FLOAT percent = 100;
 	FLOAT circleWidth = 5.0f;
 	DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, percent, circleWidth, Colors::Silver);

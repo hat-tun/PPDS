@@ -25,6 +25,10 @@ inline void SafeRelease(Interface *& pInterfaceToRelease)
     }
 }
 
+extern FLOAT g_CenterX;
+extern FLOAT g_CenterY;
+extern FLOAT g_Radius;
+
 /// <summary>
 /// Entry point for the application
 /// </summary>
@@ -356,6 +360,9 @@ void CDepthBasics::Update(ParamSet& param)
 				circlePos.y = sumY / AVE_BUFFER_MAX;
 				circleRadius = sumR / AVE_BUFFER_MAX;
 
+				g_CenterX = circlePos.x;
+				g_CenterY = circlePos.y;
+				g_Radius = circleRadius;
 				circle(resultMat, circlePos, circleRadius, cv::Scalar(255), 2);
 			}
 
