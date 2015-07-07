@@ -157,13 +157,12 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
-#if defined(USE_OPENCV)
+
 		int key = cv::waitKey(50);
 		if (key > 0)
 		{
 			break;
 		}
-#endif
     }
 
 #ifdef PRINT_LOG
@@ -180,13 +179,12 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 #ifdef PRINT_LOG
 void CDepthBasics::Update(ParamSet& param, FILE* fp)
 #else
-//void CDepthBasics::Update(ParamSet& param)
-void CDepthBasics::Update()
+void CDepthBasics::Update(ParamSet& param)
 #endif
 {
     if (!m_pDepthFrameReader)
     {
-        return;
+        return ;
     }
 
     IDepthFrame* pDepthFrame = NULL;
@@ -237,23 +235,16 @@ void CDepthBasics::Update()
             //// hr = pDepthFrame->get_DepthMaxReliableDistance(&nDepthMaxDistance);
         }
 
-#if defined(USE_OPENCV)
 		cv::Mat bufferMat(nHeight, nWidth, CV_16UC1);
 		cv::Mat depthMat(nHeight, nWidth, CV_8UC1);
-#endif
-		
+
 		if (SUCCEEDED(hr))
         {
-#if !defined(USE_OPENCV)
-            hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, &pBuffer);
-#else
-            hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, reinterpret_cast<UINT16**>(&bufferMat.data));            
-#endif
+            hr = pDepthFrame->AccessUnderlyingBuffer(&nBufferSize, reinterpret_cast<UINT16**>(&(bufferMat.data)));            
         }
 
 		if (SUCCEEDED(hr))
 		{
-#if defined(USE_OPENCV)
 			bufferMat.convertTo(depthMat, CV_8U, -255.0f / 8000.0f, 255.0f);
 			const int destWidth = 200;
 			const int destHeight = 150;
@@ -261,11 +252,12 @@ void CDepthBasics::Update()
 			cv::Mat binMat;
 			cv::threshold(roiMat, binMat, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 			//cv::threshold(roiMat, binMat, param.binThresh, 255, cv::THRESH_BINARY);
+
 			cv::Mat edgeMat;
 			cv::Canny(binMat, edgeMat, param.canny.Thresh1, param.canny.Thresh2);
 			cv::Mat resultMat(destHeight, destWidth, CV_8UC1, cvScalar(0));
 
-
+#if 0
 #ifdef HOUGH_LINES_P
 			std::vector<cv::Vec4i> lines;
 			cv::HoughLinesP(edgeMat, lines, param.line.rho, param.line.theta, param.line.thresh, param.line.minLineLength, param.line.maxLineGap);
@@ -274,13 +266,13 @@ void CDepthBasics::Update()
 				line(resultMat, cv::Point(lines[i][0], lines[i][1]),
 					cv::Point(lines[i][2], lines[i][3]), cv::Scalar(255), 1, CV_AA);
 			}
-			
+
 #else
 			std::vector<cv::Vec2f> lines;
 			cv::HoughLines(edgeMat, lines, param.line.rho, param.line.theta, param.line.thresh, param.line.srn, param.line.stn);
-            std::vector<cv::Vec2f>::iterator it = lines.begin();
-            cv::Point p1, p2;
-			double rho, theta , a, b, x0, y0;
+			std::vector<cv::Vec2f>::iterator it = lines.begin();
+			cv::Point p1, p2;
+			double rho, theta, a, b, x0, y0;
 			// draw line
 			for (; it != lines.end(); ++it) {
 				rho = (*it)[0];
@@ -296,15 +288,13 @@ void CDepthBasics::Update()
 				line(resultMat, p1, p2, cv::Scalar(255), 1, CV_AA);
 			}
 #endif
-
-
-
+#endif
 			cv::Point circlePos(0, 0);
 			int circleRadius = 0;
 
-			const int AVE_BUFFER_MAX = 5;
-			static cv::Point aveCirclePos[AVE_BUFFER_MAX] = {0};
-			static int aveCircleRadius[AVE_BUFFER_MAX] = {0};
+			const int AVE_BUFFER_MAX = 10;
+			static cv::Point aveCirclePos[AVE_BUFFER_MAX] = { 0 };
+			static int aveCircleRadius[AVE_BUFFER_MAX] = { 0 };
 			static int aveIndex = 0;
 			static int circleFailureCounter = 0;
 			static int circleSuccessCounter = 0;
@@ -312,7 +302,7 @@ void CDepthBasics::Update()
 			std::vector<cv::Vec3f> circles;
 			cv::HoughCircles(edgeMat, circles, CV_HOUGH_GRADIENT, param.circle.dp, param.circle.minDist, param.circle.param1, param.circle.param2, param.circle.minRadius, param.circle.maxRadius);
 			std::vector<cv::Vec3f>::iterator iterCircle = circles.begin();
-			for (; iterCircle!= circles.end(); ++iterCircle) {
+			for (; iterCircle != circles.end(); ++iterCircle) {
 				cv::Point center(cv::saturate_cast<int>((*iterCircle)[0]), cv::saturate_cast<int>((*iterCircle)[1]));
 				int radius = cv::saturate_cast<int>((*iterCircle)[2]);
 
@@ -336,7 +326,7 @@ void CDepthBasics::Update()
 			{
 				circleSuccessCounter++;
 			}
-			
+
 			const int FAILURE_COUNT = 30;
 			if (circleFailureCounter > FAILURE_COUNT)
 			{
@@ -368,21 +358,17 @@ void CDepthBasics::Update()
 
 				circle(resultMat, circlePos, circleRadius, cv::Scalar(255), 2);
 			}
+
 			cv::imshow("Edge", edgeMat);
 			cv::imshow("Binary", binMat);
 			cv::imshow("Depth", ~roiMat);
 			cv::imshow("Result", resultMat);
-#else
-//ProcessDepth(nTime, pBuffer, nWidth, nHeight, nDepthMinReliableDistance, nDepthMaxDistance);
-#endif
 		}
-		
-		//SafeRelease(pFrameDescription);
+
+		SafeRelease(pFrameDescription);
 	}
 
-
-
-	//SafeRelease(pDepthFrame);
+	SafeRelease(pDepthFrame);
 }
 
 

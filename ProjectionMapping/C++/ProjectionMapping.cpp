@@ -17,7 +17,7 @@
 #define NOMINMAX
 #define WINDOW_PROJECTOR 
 #define KINNECT
-#define USE_OPENCV
+
 #include <windows.h>
 
 #include <d3d11.h>
@@ -48,11 +48,9 @@
 #include "DepthBasics.h"
 #endif
 
-#if defined(USE_OPENCV)
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#endif
 
 using namespace DirectX;
 
@@ -101,42 +99,6 @@ XMMATRIX                            g_View;
 XMMATRIX                            g_Projection;
 
 
-// Opencv Parameters
-struct CannyParam
-{
-	int Thresh1;
-	int Thresh2;
-};
-
-struct HoughLineParam
-{
-	float rho;
-	float theta;
-	int thresh;
-	int srn;
-	int stn;
-	int minLineLength;
-	int maxLineGap;
-};
-
-struct HoughCircleParam
-{
-	int dp;
-	int minDist;
-	int param1;
-	int param2;
-	int minRadius;
-	int maxRadius;
-};
-
-struct ParamSet
-{
-	int binThresh;
-	CannyParam canny;
-	HoughLineParam line;
-	HoughCircleParam circle;
-};
-
 //--------------------------------------------------------------------------------------
 // Forward declarations
 //--------------------------------------------------------------------------------------
@@ -146,7 +108,7 @@ HRESULT InitOpencv( ParamSet& param );
 HRESULT InitDevice();
 void CleanupDevice();
 LRESULT CALLBACK    WndProc( HWND, UINT, WPARAM, LPARAM );
-void Update(CDepthBasics& kinect);
+void Update(CDepthBasics& kinect, ParamSet& param);
 void Render();
 
 
@@ -184,7 +146,7 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
     MSG msg = {0};
     while( WM_QUIT != msg.message )
     {
-		Update(kinect);
+
         if( PeekMessage( &msg, nullptr, 0, 0, PM_REMOVE ) )
         {
             TranslateMessage( &msg );
@@ -192,7 +154,7 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         }
         else
         {
-
+			Update(kinect, param);
             Render();
         }
     }
@@ -472,6 +434,7 @@ HRESULT InitOpencv(ParamSet& param)
 	param.circle.param2 = 20;
 	param.circle.minRadius = 10;
 	param.circle.maxRadius = 200;
+#if 0
 	cv::createTrackbar("BinThresh", "Binary", &param.binThresh, 255);
 	cv::createTrackbar("Canny1", "Edge", &param.canny.Thresh1, 255);
 	cv::createTrackbar("Canny2", "Edge", &param.canny.Thresh2, 255);
@@ -483,7 +446,7 @@ HRESULT InitOpencv(ParamSet& param)
 	cv::createTrackbar("CircleParam2", "Result", &param.circle.param2, 255);
 	cv::createTrackbar("CircleMinRad", "Result", &param.circle.minRadius, 255);
 	cv::createTrackbar("CircleMaxRad", "Result", &param.circle.maxRadius, 255);
-
+#endif
 	return S_OK;
 }
 
@@ -704,11 +667,13 @@ void DrawCircle(SpriteBatch& batch, ID3D11ShaderResourceView* texture, XMFLOAT2 
 //--------------------------------------------------------------------------------------
 // Update a frame
 //--------------------------------------------------------------------------------------
-void Update(CDepthBasics& kinect)
+void Update(CDepthBasics& kinect, ParamSet& param)
 {
 	// Update depth image
-	kinect.Update();
+	int nHeight = 424;
+	int nWidth = 512;
 
+	kinect.Update(param);
 }
 
 void ProcessImage()
