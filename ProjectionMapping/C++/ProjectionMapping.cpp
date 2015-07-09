@@ -17,6 +17,7 @@
 #define NOMINMAX
 //#define WINDOW_PROJECTOR 
 #define KINNECT
+#define DXTK_AUDIO
 
 #include <windows.h>
 
@@ -396,11 +397,11 @@ HRESULT InitDevice()
     g_audioTimerAcc = 10.f;
 
     g_waveBank.reset( new WaveBank( g_audEngine.get(), L"adpcmdroid.xwb" ) );
-    g_soundEffect.reset( new SoundEffect( g_audEngine.get(), L"MusicMono_adpcm.wav" ) );
+    g_soundEffect.reset( new SoundEffect( g_audEngine.get(), L"loop_117.wav" ) );
     g_effect1 = g_soundEffect->CreateInstance();
     g_effect2 = g_waveBank->CreateInstance( 10 );
 
-    g_effect1->Play( true );
+	g_effect1->Play(true);
     g_effect2->Play();
 
 #endif // DXTK_AUDIO
