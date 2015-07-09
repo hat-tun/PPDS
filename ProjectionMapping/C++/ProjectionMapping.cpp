@@ -84,11 +84,16 @@ std::unique_ptr<SpriteFont>                             g_Font;
 
 #ifdef DXTK_AUDIO
 std::unique_ptr<DirectX::AudioEngine>                   g_audEngine;
-std::unique_ptr<DirectX::WaveBank>                      g_waveBank;
+std::unique_ptr<DirectX::SoundEffect>                   g_soundCircleEffect;
 std::unique_ptr<DirectX::SoundEffect>                   g_soundEffect;
 std::unique_ptr<DirectX::SoundEffectInstance>           g_effect1;
-std::unique_ptr<DirectX::SoundEffectInstance>           g_effect2;
-
+size_t g_audioSize = 0;
+int16_t* g_pStartAudio = nullptr;
+int16_t g_frequency = 440;
+std::unique_ptr<uint8_t[]> g_wavData;
+WAVEFORMATEX* g_wfx;
+int8_t g_div = 16;
+	
 uint32_t                                                g_audioEvent = 0;
 float                                                   g_audioTimerAcc = 0.f;
 
@@ -102,7 +107,7 @@ XMMATRIX                            g_Projection;
 
 FLOAT g_CenterX = 0.f;
 FLOAT g_CenterY = 0.f;
-FLOAT g_Radius = 0.f;
+FLOAT g_Radius = 0.f; 
 
 //--------------------------------------------------------------------------------------
 // Forward declarations
@@ -115,7 +120,7 @@ void CleanupDevice();
 LRESULT CALLBACK    WndProc( HWND, UINT, WPARAM, LPARAM );
 void Update(CDepthBasics& kinect, ParamSet& param);
 void Render();
-
+void GenerateSineWave(_Out_writes_(sampleRate) int16_t* data, int sampleRate, int frequency);
 
 
 
@@ -396,13 +401,29 @@ HRESULT InitDevice()
     g_audioEvent = 0;
     g_audioTimerAcc = 10.f;
 
-    g_waveBank.reset( new WaveBank( g_audEngine.get(), L"adpcmdroid.xwb" ) );
+	size_t audioSize = 44100 * 2 / g_div;
+	g_audioSize = audioSize;
+	std::unique_ptr<uint8_t[]> wavData(new uint8_t[audioSize + sizeof(WAVEFORMATEX)]);
+	
+	auto startAudio = wavData.get() + sizeof(WAVEFORMATEX);
+	g_pStartAudio = reinterpret_cast<int16_t*>(startAudio);
+	g_frequency = 220;
+	GenerateSineWave(g_pStartAudio, 44100 / g_div, g_frequency);
+
+	auto wfx = reinterpret_cast<WAVEFORMATEX*>(wavData.get());
+	wfx->wFormatTag = WAVE_FORMAT_PCM;
+	wfx->nChannels = 1;
+	wfx->nSamplesPerSec = 44100;
+	wfx->nAvgBytesPerSec = 2 * 44100;
+	wfx->nBlockAlign = 2;
+	wfx->wBitsPerSample = 16;
+	wfx->cbSize = 0;
+
+	g_soundCircleEffect.reset(new SoundEffect(g_audEngine.get(), wavData, wfx, startAudio, audioSize));
     g_soundEffect.reset( new SoundEffect( g_audEngine.get(), L"loop_117.wav" ) );
     g_effect1 = g_soundEffect->CreateInstance();
-    g_effect2 = g_waveBank->CreateInstance( 10 );
 
 	g_effect1->Play(true);
-    g_effect2->Play();
 
 #endif // DXTK_AUDIO
 
@@ -714,25 +735,6 @@ void Render()
     // Rotate cube around the origin
     g_World = XMMatrixRotationY( t );
 
-#ifdef DXTK_AUDIO
-
-    g_audioTimerAcc -= dt;
-    if ( g_audioTimerAcc < 0 )
-    {
-        g_audioTimerAcc = 4.f;
-
-        g_waveBank->Play( g_audioEvent++ );
-
-        if ( g_audioEvent >= 11 )
-            g_audioEvent = 0;
-    }
-
-    if ( !g_audEngine->Update() )
-    {
-        // Error cases are handled by the message loop
-    }
-
-#endif // DXTK_AUDIO
     //
     // Clear the back buffer
     //
@@ -753,11 +755,36 @@ void Render()
 	FLOAT offsetY = 200;
 	XMFLOAT2 center = XMFLOAT2(1280 - g_CenterX * ratio, g_CenterY * ratio + offsetY);
 	FLOAT radius = g_Radius * ratio;
-	FLOAT percent = 100;
+	static FLOAT percent = 0;
 	FLOAT circleWidth = 5.0f;
 	DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, percent, circleWidth, Colors::Silver);
 
-    // Draw sprite
+
+#ifdef DXTK_AUDIO
+
+    g_audioTimerAcc -= dt;
+	//if (g_audioTimerAcc < 0)
+    {
+        g_audioTimerAcc = 4.f;
+
+		if (!g_soundCircleEffect->IsInUse())
+		{
+			percent++;
+			if (percent >= 100) percent = 0;
+			g_frequency = 55 + (110 - 55) * (percent / 100.f);
+			GenerateSineWave(g_pStartAudio, 44100 / g_div, g_frequency);
+			g_soundCircleEffect->Play();
+		}
+    }
+
+    if ( !g_audEngine->Update() )
+    {
+        // Error cases are handled by the message loop
+    }
+
+#endif // DXTK_AUDIO
+
+	// Draw sprite
     g_Sprites->Begin( SpriteSortMode_Deferred );
 	RECT rect = { 0, 0, 10, 10 };
 	g_Sprites->Draw(g_pTextureRV2, XMFLOAT2(10, 75), &rect, Colors::White);
@@ -779,4 +806,21 @@ void Render()
     // Present our back buffer to our front buffer
     //
     g_pSwapChain->Present( 0, 0 );
+}
+
+
+void GenerateSineWave( _Out_writes_(sampleRate) int16_t* data, int sampleRate, int frequency )
+{
+    const double timeStep = 1.0 / double(sampleRate);
+    const double freq = double(frequency);
+
+    int16_t* ptr = data;
+    double time = 0.0;
+    for( int j = 0; j < sampleRate; ++j, ++ptr )
+    {
+        double angle = ( 2.0 * XM_PI * freq ) * time;
+        double factor = 0.5 * ( sin(angle) + 1.0 );
+        *ptr = int16_t( 32768 * factor );
+        time += timeStep;
+    }
 }
