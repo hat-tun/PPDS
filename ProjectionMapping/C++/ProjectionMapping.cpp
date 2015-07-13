@@ -86,8 +86,11 @@ std::unique_ptr<SpriteFont>                             g_Font;
 std::unique_ptr<DirectX::AudioEngine>                   g_audEngine;
 std::unique_ptr<DirectX::SoundEffect>                   g_soundCircleEffect;
 std::unique_ptr<DirectX::SoundEffect>                   g_soundFullEffect;
+std::unique_ptr<DirectX::SoundEffect>                   g_soundShiningEffect;
+std::unique_ptr<DirectX::SoundEffect>                   g_soundFinishEffect;
 std::unique_ptr<DirectX::SoundEffect>                   g_soundEffect;
 std::unique_ptr<DirectX::SoundEffectInstance>           g_effect1;
+std::unique_ptr<DirectX::SoundEffectInstance>           g_effect2;
 size_t g_audioSize = 0;
 int16_t* g_pStartAudio = nullptr;
 int16_t g_frequency = 440;
@@ -452,8 +455,11 @@ HRESULT InitDevice()
 
 	g_soundCircleEffect.reset(new SoundEffect(g_audEngine.get(), wavData, wfx, startAudio, audioSize));
 	g_soundFullEffect.reset(new SoundEffect(g_audEngine.get(), L"shakin.wav"));
+	g_soundShiningEffect.reset(new SoundEffect(g_audEngine.get(), L"kirakira.wav"));
+	g_soundFinishEffect.reset(new SoundEffect(g_audEngine.get(), L"fantasy_005.wav"));
     g_soundEffect.reset( new SoundEffect( g_audEngine.get(), L"loop_117.wav" ) );
     g_effect1 = g_soundEffect->CreateInstance();
+	g_effect2 = g_soundShiningEffect->CreateInstance();
 
 	g_effect1->Play(true);
 
@@ -801,7 +807,7 @@ void Render()
 	FLOAT ratioVertical = ProjectorHeight / g_Cal.height;
 	FLOAT ratioHorizontal = ProjectorWidth / g_Cal.width;
 	FLOAT offsetX = 80;
-	FLOAT offsetY = -25;
+	FLOAT offsetY = -30;
 	XMFLOAT2 center = XMFLOAT2((g_Cal.width - g_CenterX) * ratioHorizontal + offsetX, (g_CenterY + offsetY) * ratioVertical);
 	FLOAT offsetR = -10;
 	FLOAT radius = g_Radius * ratioVertical + offsetR ;
@@ -840,6 +846,7 @@ void Render()
 					// sound SE
 					g_soundFullEffect->Play();
 					ringModeCounter = 1;
+					g_effect2->Play(true);
 				}
 			}
 		}
@@ -873,7 +880,7 @@ void Render()
 	const int COUNT_MAX = 500;
 	if (ringModeCounter > 0)
 	{
-		FLOAT scaleRatio = radius / 800.0f;
+		FLOAT scaleRatio = radius / 700.0f;
 		const XMVECTORF32 scale = { scaleRatio, scaleRatio, scaleRatio };
 		FLOAT offset = 20.f * ( 1.f - (FLOAT)ringModeCounter / COUNT_MAX);
 		const XMVECTORF32 translate = { 40.f * center.x / ProjectorWidth - 20.f, 30.0f * (1.f - abs(center.y - radius) / ProjectorHeight) - 15.f + offset, 0 };
@@ -882,6 +889,14 @@ void Render()
 		g_Model->Draw(g_pImmediateContext, *g_States, local, g_View, g_Projection);
 		if (ringModeCounter < COUNT_MAX)
 		{
+			ringModeCounter++;
+		}
+		else if (ringModeCounter == COUNT_MAX)
+		{
+			g_effect2->Pause();
+			g_effect1->Pause();
+			g_soundFullEffect->Play();
+			g_soundFinishEffect->Play();
 			ringModeCounter++;
 		}
 	}
