@@ -85,6 +85,7 @@ std::unique_ptr<SpriteFont>                             g_Font;
 #ifdef DXTK_AUDIO
 std::unique_ptr<DirectX::AudioEngine>                   g_audEngine;
 std::unique_ptr<DirectX::SoundEffect>                   g_soundCircleEffect;
+std::unique_ptr<DirectX::SoundEffect>                   g_soundFullEffect;
 std::unique_ptr<DirectX::SoundEffect>                   g_soundEffect;
 std::unique_ptr<DirectX::SoundEffectInstance>           g_effect1;
 size_t g_audioSize = 0;
@@ -92,7 +93,8 @@ int16_t* g_pStartAudio = nullptr;
 int16_t g_frequency = 440;
 std::unique_ptr<uint8_t[]> g_wavData;
 WAVEFORMATEX* g_wfx;
-int8_t g_div = 16;
+int8_t g_div = 10;
+//int8_t g_div = 16;
 	
 uint32_t                                                g_audioEvent = 0;
 float                                                   g_audioTimerAcc = 0.f;
@@ -447,6 +449,7 @@ HRESULT InitDevice()
 	wfx->cbSize = 0;
 
 	g_soundCircleEffect.reset(new SoundEffect(g_audEngine.get(), wavData, wfx, startAudio, audioSize));
+	g_soundFullEffect.reset(new SoundEffect(g_audEngine.get(), L"shakin.wav"));
     g_soundEffect.reset( new SoundEffect( g_audEngine.get(), L"loop_117.wav" ) );
     g_effect1 = g_soundEffect->CreateInstance();
 
@@ -719,7 +722,7 @@ void DrawCircle(SpriteBatch& batch, ID3D11ShaderResourceView* texture, XMFLOAT2 
 		FLOAT rad = XM_2PI * i / 1000.f;
 		XMFLOAT2 point;
 		point.x = sin(rad) * radius + center.x;
-		point.y = cos(rad) * radius + center.y;
+		point.y = -cos(rad) * radius + center.y;
 		batch.Draw(g_pTextureRV2, point, &rect, color);
 	}
 
@@ -798,27 +801,44 @@ void Render()
 	XMFLOAT2 center = XMFLOAT2((g_Cal.width - g_CenterX) * ratio + offsetX, (g_CenterY + offsetY) * ratio);
 	FLOAT offsetR = -10;
 	FLOAT radius = g_Radius * ratio + offsetR ;
-	static FLOAT percent = 100;
 	FLOAT circleWidth = 5.0f;
-	DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, percent, circleWidth, Colors::Silver);
+	DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, 100, circleWidth, Colors::Silver);
+
+	// indicator
+	static FLOAT percent = 0;
+	if (g_Radius == 0)
+	{
+		percent = 0;
+	}
+	DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, percent, circleWidth, Colors::GreenYellow);
 
 
 #ifdef DXTK_AUDIO
-
     g_audioTimerAcc -= dt;
-	//if (g_audioTimerAcc < 0)
-    {
-        g_audioTimerAcc = 4.f;
+	if (g_Radius != 0)
+	{
+		g_audioTimerAcc = 4.f;
 
-		if (!g_soundCircleEffect->IsInUse())
+		if (percent < 100)
 		{
-			percent++;
-			if (percent >= 100) percent = 0;
-			g_frequency = 55 + (110 - 55) * (percent / 100.f);
-			GenerateSineWave(g_pStartAudio, 44100 / g_div, g_frequency);
-			g_soundCircleEffect->Play();
+			if (!g_soundCircleEffect->IsInUse())
+			{
+				percent++;
+				g_frequency = 20.f + 50.f * (percent / 100.f);
+				GenerateSineWave(g_pStartAudio, 44100 / g_div, g_frequency);
+				g_soundCircleEffect->Play();
+				if (percent == 100)
+				{
+					// sound SE
+					g_soundFullEffect->Play();
+				}
+			}
 		}
-    }
+		else
+		{
+			
+		}
+	}
 
     if ( !g_audEngine->Update() )
     {
