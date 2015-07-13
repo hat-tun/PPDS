@@ -14,6 +14,7 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 
+//#define CALIBRATION
 
 // Opencv Parameters
 struct CannyParam
@@ -88,6 +89,9 @@ public:
 
     // Depth reader
     IDepthFrameReader*      m_pDepthFrameReader;
+#if defined (CALIBRATION)
+    IColorFrameReader*      m_pColorFrameReader;
+#endif
 
     /// <summary>
     /// Main processing function
@@ -98,6 +102,9 @@ public:
 	void                    Update(ParamSet& param);
 #endif
 
+#if defined (CALIBRATION)
+	void                    Update();
+#endif
     /// <summary>
     /// Initializes the default Kinect sensor
     /// </summary>

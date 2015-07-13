@@ -109,6 +109,13 @@ FLOAT g_CenterX = 0.f;
 FLOAT g_CenterY = 0.f;
 FLOAT g_Radius = 0.f; 
 
+#if defined (CALIBRATION)
+int g_CalibrationStartX = 0;
+int g_CalibrationStartY = 0;
+int g_CalibrationWidth = 1000;
+int g_CalibrationHeight = 1000;
+#endif
+
 //--------------------------------------------------------------------------------------
 // Forward declarations
 //--------------------------------------------------------------------------------------
@@ -438,11 +445,14 @@ HRESULT InitKinect( CDepthBasics& kinect )
 
 HRESULT InitOpencv(ParamSet& param)
 {
+#if defined (CALIBRATION)
+	cv::namedWindow("Color");
+#else
 	cv::namedWindow("Depth");
 	cv::namedWindow("Edge");
 	cv::namedWindow("Binary");
 	cv::namedWindow("Result");
-
+#endif
 	// init params
 	param.binThresh = 230;
 	param.canny.Thresh1 = 70;
@@ -472,6 +482,12 @@ HRESULT InitOpencv(ParamSet& param)
 	cv::createTrackbar("CircleParam2", "Result", &param.circle.param2, 255);
 	cv::createTrackbar("CircleMinRad", "Result", &param.circle.minRadius, 255);
 	cv::createTrackbar("CircleMaxRad", "Result", &param.circle.maxRadius, 255);
+#endif
+#if defined (CALIBRATION)
+	cv::createTrackbar("startX", "Color", &g_CalibrationStartX, 1920);
+	cv::createTrackbar("startY", "Color", &g_CalibrationStartY, 1080);
+	cv::createTrackbar("width", "Color", &g_CalibrationWidth, 1920);
+	cv::createTrackbar("height", "Color", &g_CalibrationHeight, 1080);
 #endif
 	return S_OK;
 }
@@ -695,11 +711,15 @@ void DrawCircle(SpriteBatch& batch, ID3D11ShaderResourceView* texture, XMFLOAT2 
 //--------------------------------------------------------------------------------------
 void Update(CDepthBasics& kinect, ParamSet& param)
 {
+#if defined (CALIBRATION)
+	kinect.Update()	;
+#else
 	// Update depth image
 	int nHeight = 424;
 	int nWidth = 512;
 
 	kinect.Update(param);
+#endif
 }
 
 void ProcessImage()
@@ -713,6 +733,7 @@ void ProcessImage()
 //--------------------------------------------------------------------------------------
 void Render()
 {
+#if !defined (CALIBRATION)
     // Update our time
     static float t = 0.0f;
     static float dt = 0.f;
@@ -802,6 +823,7 @@ void Render()
     XMVECTOR rotate = XMQuaternionRotationRollPitchYaw( 0, XM_PI/2.f, XM_PI/2.f );
     local = XMMatrixMultiply( g_World, XMMatrixTransformation( g_XMZero, qid, scale, g_XMZero, rotate, translate ) );
     g_Model->Draw( g_pImmediateContext, *g_States, local, g_View, g_Projection );
+#endif
     //
     // Present our back buffer to our front buffer
     //

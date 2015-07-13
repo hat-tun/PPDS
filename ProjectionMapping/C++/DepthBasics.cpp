@@ -29,6 +29,11 @@ extern FLOAT g_CenterX;
 extern FLOAT g_CenterY;
 extern FLOAT g_Radius;
 
+extern int g_CalibrationStartX;
+extern int g_CalibrationStartY;
+extern int g_CalibrationWidth;
+extern int g_CalibrationHeight;
+
 /// <summary>
 /// Entry point for the application
 /// </summary>
@@ -177,6 +182,70 @@ int CDepthBasics::Run(HINSTANCE hInstance, int nCmdShow)
 }
 #endif
 
+
+#if defined (CALIBRATION)
+void CDepthBasics::Update()
+{
+	int nWidth = 0;
+	int nHeight = 0;
+	IFrameDescription* pFrameDescription = NULL;
+
+	if (!m_pColorFrameReader)
+    {
+        return ;
+    }
+
+    IColorFrame* pColorFrame = NULL;
+
+    HRESULT hr = m_pColorFrameReader->AcquireLatestFrame(&pColorFrame);
+
+	if (SUCCEEDED(hr))
+	{
+
+        if (SUCCEEDED(hr))
+        {
+            hr = pColorFrame->get_FrameDescription(&pFrameDescription);
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            hr = pFrameDescription->get_Width(&nWidth);
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            hr = pFrameDescription->get_Height(&nHeight);
+        }
+
+
+		cv::Mat colorMat(nHeight, nWidth, CV_8UC4);
+
+
+		if (SUCCEEDED(hr)){
+			hr = pColorFrame->CopyConvertedFrameDataToArray(nWidth*nHeight*4, reinterpret_cast<BYTE*>(colorMat.data), ColorImageFormat_Bgra);  
+			if (SUCCEEDED(hr)){
+				//cv::resize(colorMat, colorMat, cv::Size(), 0.5, 0.5);   //……7
+			}
+		}
+
+		// グレースケールに変換する
+		cv::Mat grayMat;
+		cvtColor(colorMat, grayMat, CV_RGB2GRAY);
+		//cv::imshow("Color", colorMat);
+		cv::Mat binMat;
+		//cv::threshold(grayMat, binMat, 240, 255, cv::THRESH_BINARY);
+
+		cv::rectangle(grayMat, cv::Point(g_CalibrationStartX, g_CalibrationStartY), 
+			cv::Point(g_CalibrationWidth, g_CalibrationHeight), cv::Scalar(255), 3, CV_AA);
+		
+		cv::imshow("Color", grayMat);
+		SafeRelease(pFrameDescription);
+	}
+	SafeRelease(pColorFrame);
+}
+
+
+#endif
 /// <summary>
 /// Main processing function
 /// </summary>
@@ -396,8 +465,23 @@ HRESULT CDepthBasics::InitializeDefaultSensor()
     if (m_pKinectSensor)
     {
         // Initialize the Kinect and get the depth reader
-        IDepthFrameSource* pDepthFrameSource = NULL;
+#if defined (CALIBRATION)
+        IColorFrameSource* pColorFrameSource = NULL;
+        hr = m_pKinectSensor->Open();
 
+		if (SUCCEEDED(hr))
+        {
+            hr = m_pKinectSensor->get_ColorFrameSource(&pColorFrameSource);
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            hr = pColorFrameSource->OpenReader(&m_pColorFrameReader);
+        }
+
+		SafeRelease(pColorFrameSource);
+#else
+        IDepthFrameSource* pDepthFrameSource = NULL;
         hr = m_pKinectSensor->Open();
 
         if (SUCCEEDED(hr))
@@ -405,12 +489,14 @@ HRESULT CDepthBasics::InitializeDefaultSensor()
             hr = m_pKinectSensor->get_DepthFrameSource(&pDepthFrameSource);
         }
 
+
         if (SUCCEEDED(hr))
         {
             hr = pDepthFrameSource->OpenReader(&m_pDepthFrameReader);
         }
 
 		SafeRelease(pDepthFrameSource);
+#endif
     }
 
     if (!m_pKinectSensor || FAILED(hr))
