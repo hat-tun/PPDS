@@ -238,7 +238,8 @@ HRESULT InitWindow( HINSTANCE hInstance, int nCmdShow )
                            nullptr );
 	
 #else
-    RECT rc = { 0, 0, 1280, 960 };
+	//RECT rc = { 0, 0, 1280, 960 };
+    RECT rc = { 0, 0, ProjectorWidth, ProjectorHeight };
     AdjustWindowRect( &rc, WS_OVERLAPPEDWINDOW, FALSE );
 	g_hWnd = CreateWindow(L"SampleWindowClass", L"DirectXTK ProjectionMapping", WS_OVERLAPPEDWINDOW,
                            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
@@ -405,7 +406,7 @@ HRESULT InitDevice()
     g_World = XMMatrixIdentity();
 
     // Initialize the view matrix
-	FLOAT EyePosition = -10.0f;
+	FLOAT EyePosition = -100.0f;
     XMVECTOR Eye = XMVectorSet( 0.0f, 0.0f, EyePosition, 0.0f );
     XMVECTOR At = XMVectorSet( 0.0f, 0.0f, 0.0f, 0.0f );
     XMVECTOR Up = XMVectorSet( 0.0f, 1.0f, 0.0f, 0.0f );
@@ -414,7 +415,8 @@ HRESULT InitDevice()
     g_BatchEffect->SetView( g_View );
 
     // Initialize the projection matrix
-    g_Projection = XMMatrixPerspectiveFovLH( atan2(20.0f * height / (FLOAT)width, -EyePosition) * 2.0f, width / (FLOAT)height, 0.01f, 100.0f );
+	//g_Projection = XMMatrixPerspectiveFovLH(atan2(20.0f * height / (FLOAT)width, -EyePosition) * 2.0f, width / (FLOAT)height, 0.01f, 100.0f);
+    g_Projection = XMMatrixPerspectiveFovLH( atan2(20.0f * height / (FLOAT)width, -EyePosition) * 2.0f, width / (FLOAT)height, 0.01f, 1000.0f );
 
     g_BatchEffect->SetProjection( g_Projection );
 
@@ -777,9 +779,10 @@ void Render()
     }
 
     // Rotate cube around the origin
-    g_World = XMMatrixRotationY( t );
+	g_World = XMMatrixRotationX(-XM_PI / 2.f);
+	g_World = XMMatrixMultiply(g_World, XMMatrixRotationY(t));
 
-    //
+	//
     // Clear the back buffer
     //
     g_pImmediateContext->ClearRenderTargetView( g_pRenderTargetView, Colors::Black );
@@ -795,22 +798,27 @@ void Render()
     DrawGrid( *g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray );
 
 	// Draw Circle
-	FLOAT ratio = ProjectorHeight / g_Cal.height;
+	FLOAT ratioVertical = ProjectorHeight / g_Cal.height;
+	FLOAT ratioHorizontal = ProjectorWidth / g_Cal.width;
 	FLOAT offsetX = 80;
 	FLOAT offsetY = -25;
-	XMFLOAT2 center = XMFLOAT2((g_Cal.width - g_CenterX) * ratio + offsetX, (g_CenterY + offsetY) * ratio);
+	XMFLOAT2 center = XMFLOAT2((g_Cal.width - g_CenterX) * ratioHorizontal + offsetX, (g_CenterY + offsetY) * ratioVertical);
 	FLOAT offsetR = -10;
-	FLOAT radius = g_Radius * ratio + offsetR ;
+	FLOAT radius = g_Radius * ratioVertical + offsetR ;
 	FLOAT circleWidth = 5.0f;
 	DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, 100, circleWidth, Colors::Silver);
+
+	static int ringModeCounter = 0;
 
 	// indicator
 	static FLOAT percent = 0;
 	if (g_Radius == 0)
 	{
 		percent = 0;
+		ringModeCounter = 0;
 	}
 	DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, percent, circleWidth, Colors::GreenYellow);
+
 
 
 #ifdef DXTK_AUDIO
@@ -831,6 +839,7 @@ void Render()
 				{
 					// sound SE
 					g_soundFullEffect->Play();
+					ringModeCounter = 1;
 				}
 			}
 		}
@@ -849,24 +858,36 @@ void Render()
 
 	// Draw sprite
     g_Sprites->Begin( SpriteSortMode_Deferred );
-	RECT rect = { 0, 0, 10, 10 };
-	g_Sprites->Draw(g_pTextureRV2, XMFLOAT2(10, 75), &rect, Colors::White);
+	//RECT rect = { 0, 0, 10, 10 };
+	//g_Sprites->Draw(g_pTextureRV2, XMFLOAT2(10, 75), &rect, Colors::White);
 
     g_Font->DrawString( g_Sprites.get(), L"DirectXTK ProjectionMapping", XMFLOAT2( 100, 10 ), Colors::Yellow );
     g_Sprites->End();
 
     // Draw 3D object
-    XMMATRIX local = XMMatrixMultiply( g_World, XMMatrixTranslation( -2.f, -2.f, 4.f ) );
-    g_Shape->Draw( local, g_View, g_Projection, Colors::White, g_pTextureRV1 );
+	//XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation(-2.f, -2.f, 4.f));
+    //g_Shape->Draw( local, g_View, g_Projection, Colors::White, g_pTextureRV1 );
 
     XMVECTOR qid = XMQuaternionIdentity();
-    const XMVECTORF32 scale = { 0.1f, 0.1f, 0.1f};
-    const XMVECTORF32 translate = { 3.f, -2.f, 4.f };
-    XMVECTOR rotate = XMQuaternionRotationRollPitchYaw( 0, XM_PI/2.f, XM_PI/2.f );
-    local = XMMatrixMultiply( g_World, XMMatrixTransformation( g_XMZero, qid, scale, g_XMZero, rotate, translate ) );
-    g_Model->Draw( g_pImmediateContext, *g_States, local, g_View, g_Projection );
+
+	const int COUNT_MAX = 500;
+	if (ringModeCounter > 0)
+	{
+		FLOAT scaleRatio = radius / 800.0f;
+		const XMVECTORF32 scale = { scaleRatio, scaleRatio, scaleRatio };
+		FLOAT offset = 20.f * ( 1.f - (FLOAT)ringModeCounter / COUNT_MAX);
+		const XMVECTORF32 translate = { 40.f * center.x / ProjectorWidth - 20.f, 30.0f * (1.f - abs(center.y - radius) / ProjectorHeight) - 15.f + offset, 0 };
+		XMVECTOR rotate = XMQuaternionRotationRollPitchYaw(0, 0, 0);
+		XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, translate));
+		g_Model->Draw(g_pImmediateContext, *g_States, local, g_View, g_Projection);
+		if (ringModeCounter < COUNT_MAX)
+		{
+			ringModeCounter++;
+		}
+	}
+
 #endif
-    //
+	//
     // Present our back buffer to our front buffer
     //
     g_pSwapChain->Present( 0, 0 );
