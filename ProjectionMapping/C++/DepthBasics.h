@@ -52,6 +52,14 @@ struct ParamSet
 	HoughCircleParam circle;
 };
 
+struct CalibrationParameter
+{
+	int startX;
+	int startY;
+	int width;
+	int height;
+};
+
 
 class CDepthBasics
 {

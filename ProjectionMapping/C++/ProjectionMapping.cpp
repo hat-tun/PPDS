@@ -116,6 +116,22 @@ int g_CalibrationWidth = 1000;
 int g_CalibrationHeight = 1000;
 #endif
 
+// Calibration info
+CalibrationParameter g_Cal = 
+{
+	190, //startX
+	25,  //startY
+	147, //width
+	161, //height
+};
+
+// Projector screen size
+const int ProjectorWidth = 1600;
+//const int ProjectorWidth = 800;
+const int ProjectorHeight = 1200;
+//const int ProjectorHeight = 600;
+
+
 //--------------------------------------------------------------------------------------
 // Forward declarations
 //--------------------------------------------------------------------------------------
@@ -208,11 +224,15 @@ HRESULT InitWindow( HINSTANCE hInstance, int nCmdShow )
     g_hInst = hInstance;
 
 #if defined(WINDOW_PROJECTOR)
-    RECT rc = { 0, 0, 1920, 1080 };
-    AdjustWindowRect( &rc, WS_OVERLAPPEDWINDOW, FALSE );
+	int MainWidth = 0;
+	int MainHeight = 0;
+	RECT rc = { MainWidth, MainHeight, MainWidth + ProjectorWidth, ProjectorHeight };
+
+	//AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+	//AdjustWindowRect(&rc, WS_POPUP, FALSE);
 	// Full screen mode
 	g_hWnd = CreateWindow(L"SampleWindowClass", L"DirectXTK ProjectionMapping", WS_VISIBLE | WS_POPUP,
-                           0, 0, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
+                           MainWidth, MainHeight, ProjectorWidth, ProjectorHeight, nullptr, nullptr, hInstance,
                            nullptr );
 	
 #else
@@ -772,11 +792,13 @@ void Render()
     DrawGrid( *g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray );
 
 	// Draw Circle
-	FLOAT ratio = 1280 / 200.f;
-	FLOAT offsetY = 200;
-	XMFLOAT2 center = XMFLOAT2(1280 - g_CenterX * ratio, g_CenterY * ratio + offsetY);
-	FLOAT radius = g_Radius * ratio;
-	static FLOAT percent = 0;
+	FLOAT ratio = ProjectorHeight / g_Cal.height;
+	FLOAT offsetX = 80;
+	FLOAT offsetY = -25;
+	XMFLOAT2 center = XMFLOAT2((g_Cal.width - g_CenterX) * ratio + offsetX, (g_CenterY + offsetY) * ratio);
+	FLOAT offsetR = -10;
+	FLOAT radius = g_Radius * ratio + offsetR ;
+	static FLOAT percent = 100;
 	FLOAT circleWidth = 5.0f;
 	DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, percent, circleWidth, Colors::Silver);
 

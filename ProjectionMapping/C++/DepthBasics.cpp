@@ -29,10 +29,13 @@ extern FLOAT g_CenterX;
 extern FLOAT g_CenterY;
 extern FLOAT g_Radius;
 
+#if defined (CALIBRATION)
 extern int g_CalibrationStartX;
 extern int g_CalibrationStartY;
 extern int g_CalibrationWidth;
 extern int g_CalibrationHeight;
+#endif
+extern CalibrationParameter g_Cal;
 
 /// <summary>
 /// Entry point for the application
@@ -236,7 +239,7 @@ void CDepthBasics::Update()
 		//cv::threshold(grayMat, binMat, 240, 255, cv::THRESH_BINARY);
 
 		cv::rectangle(grayMat, cv::Point(g_CalibrationStartX, g_CalibrationStartY), 
-			cv::Point(g_CalibrationWidth, g_CalibrationHeight), cv::Scalar(255), 3, CV_AA);
+			cv::Point(g_CalibrationStartX + g_CalibrationWidth, g_CalibrationStartY + g_CalibrationHeight), cv::Scalar(255), 3, CV_AA);
 		
 		cv::imshow("Color", grayMat);
 		SafeRelease(pFrameDescription);
@@ -319,16 +322,17 @@ void CDepthBasics::Update(ParamSet& param)
 		if (SUCCEEDED(hr))
 		{
 			bufferMat.convertTo(depthMat, CV_8U, -255.0f / 8000.0f, 255.0f);
-			const int destWidth = 200;
-			const int destHeight = 150;
-			cv::Mat roiMat(depthMat, cv::Rect((nWidth - destWidth) / 2, (nHeight - destHeight) / 2, destWidth, destHeight));
+			cv::Mat roiMat(depthMat, cv::Rect(g_Cal.startX, g_Cal.startY, g_Cal.width, g_Cal.height));
+			cv::rectangle(depthMat, cv::Point(g_Cal.startX, g_Cal.startY),
+				cv::Point(g_Cal.startX + g_Cal.width, g_Cal.startY + g_Cal.height), cv::Scalar(255), 3, CV_AA);
+			
 			cv::Mat binMat;
 			cv::threshold(roiMat, binMat, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 			//cv::threshold(roiMat, binMat, param.binThresh, 255, cv::THRESH_BINARY);
 
 			cv::Mat edgeMat;
 			cv::Canny(binMat, edgeMat, param.canny.Thresh1, param.canny.Thresh2);
-			cv::Mat resultMat(destHeight, destWidth, CV_8UC1, cvScalar(0));
+			cv::Mat resultMat(g_Cal.height, g_Cal.width, CV_8UC1, cvScalar(0));
 
 #if 0
 #ifdef HOUGH_LINES_P
@@ -437,7 +441,8 @@ void CDepthBasics::Update(ParamSet& param)
 
 			cv::imshow("Edge", edgeMat);
 			cv::imshow("Binary", binMat);
-			cv::imshow("Depth", ~roiMat);
+			//cv::imshow("Depth", ~roiMat);
+			cv::imshow("Depth", depthMat);
 			cv::imshow("Result", resultMat);
 		}
 
