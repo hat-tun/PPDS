@@ -767,33 +767,54 @@ void ProcessImage()
 void Render()
 {
 #if !defined (CALIBRATION)
-    // Update our time
-    static float t = 0.0f;
-    static float dt = 0.f;
-    if( g_driverType == D3D_DRIVER_TYPE_REFERENCE )
-    {
-        t += ( float )XM_PI * 0.0125f;
-    }
-    else
-    {
-        static uint64_t dwTimeStart = 0;
-        static uint64_t dwTimeLast = 0;
-        uint64_t dwTimeCur = GetTickCount64();
-        if( dwTimeStart == 0 )
-            dwTimeStart = dwTimeCur;
-        t = ( dwTimeCur - dwTimeStart ) / 1000.0f;
-        dt = ( dwTimeCur - dwTimeLast ) / 1000.0f;
-        dwTimeLast = dwTimeCur;
-    }
+	// Update our time
+	static float t = 0.0f;
+	static float dt = 0.f;
+	if (g_driverType == D3D_DRIVER_TYPE_REFERENCE)
+	{
+		t += (float)XM_PI * 0.0125f;
+	}
+	else
+	{
+		static uint64_t dwTimeStart = 0;
+		static uint64_t dwTimeLast = 0;
+		uint64_t dwTimeCur = GetTickCount64();
+		if (dwTimeStart == 0)
+			dwTimeStart = dwTimeCur;
+		t = (dwTimeCur - dwTimeStart) / 1000.0f;
+		dt = (dwTimeCur - dwTimeLast) / 1000.0f;
+		dwTimeLast = dwTimeCur;
+	}
 
-    // Rotate cube around the origin
+	static int ringModeCounter = 0;
+	const int WHITE_COUNTER = 500;
+	static int whiteModeCounter = 0;
+	const int ROTATE_COUNTER = 100;
+	static int rotateModeCounter = 0;
+
+	// Rotate cube around the origin
 	g_World = XMMatrixRotationX(-XM_PI / 2.f);
 	g_World = XMMatrixMultiply(g_World, XMMatrixRotationY(t));
 
 	//
-    // Clear the back buffer
-    //
-    g_pImmediateContext->ClearRenderTargetView( g_pRenderTargetView, Colors::Black );
+	// Clear the back buffer
+	//
+	if (whiteModeCounter == 0)
+	{
+		g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView, Colors::Black);
+	}
+	else if (whiteModeCounter < WHITE_COUNTER / 2.f)
+	{
+		FLOAT graduation = (FLOAT)whiteModeCounter / (WHITE_COUNTER / 2.f) ;
+		XMVECTORF32 grad = { graduation, graduation, graduation, 1.0f };
+		g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView, grad);
+	}
+	else if (whiteModeCounter >= WHITE_COUNTER / 2.f)
+	{
+		FLOAT graduation = 1.f - (FLOAT)(whiteModeCounter - WHITE_COUNTER / 2.f) / (WHITE_COUNTER / 2.f) ;
+		XMVECTORF32 grad = { graduation, graduation, graduation, 1.0f };
+		g_pImmediateContext->ClearRenderTargetView(g_pRenderTargetView, grad);
+	}
 
     //
     // Clear the depth buffer to 1.0 (max depth)
@@ -803,14 +824,7 @@ void Render()
     // Draw procedurally generated dynamic grid
     const XMVECTORF32 xaxis = { 20.f, 0.f, 0.f };
     const XMVECTORF32 yaxis = { 0.f, 20.f, 0.f };
-    DrawGrid( *g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray );
-
-	static int ringModeCounter = 0;
-	const int WHITE_COUNTER = 100;
-	static int whiteModeCounter = 0;
-	const int ROTATE_COUNTER = 100;
-	static int rotateModeCounter = 0;
-
+	DrawGrid(*g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray);
 	// Draw Circle
 	FLOAT ratioVertical = ProjectorHeight / g_Cal.height;
 	FLOAT ratioHorizontal = ProjectorWidth / g_Cal.width;
@@ -832,6 +846,7 @@ void Render()
 	{
 		percent = 0;
 		ringModeCounter = 0;
+		whiteModeCounter = 0;
 	}
 	if (whiteModeCounter <= WHITE_COUNTER / 2)
 	{
