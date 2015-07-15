@@ -824,7 +824,7 @@ void Render()
     // Draw procedurally generated dynamic grid
     const XMVECTORF32 xaxis = { 20.f, 0.f, 0.f };
     const XMVECTORF32 yaxis = { 0.f, 20.f, 0.f };
-	DrawGrid(*g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray);
+	//DrawGrid(*g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray);
 	// Draw Circle
 	FLOAT ratioVertical = ProjectorHeight / g_Cal.height;
 	FLOAT ratioHorizontal = ProjectorWidth / g_Cal.width;
@@ -892,12 +892,12 @@ void Render()
 #endif // DXTK_AUDIO
 
 	// Draw sprite
-    g_Sprites->Begin( SpriteSortMode_Deferred );
+    //g_Sprites->Begin( SpriteSortMode_Deferred );
 	//RECT rect = { 0, 0, 10, 10 };
 	//g_Sprites->Draw(g_pTextureRV2, XMFLOAT2(10, 75), &rect, Colors::White);
 
-    g_Font->DrawString( g_Sprites.get(), L"DirectXTK ProjectionMapping", XMFLOAT2( 100, 10 ), Colors::Yellow );
-    g_Sprites->End();
+	//g_Font->DrawString(g_Sprites.get(), L"DirectXTK ProjectionMapping", XMFLOAT2(100, 10), Colors::Yellow);
+	//g_Sprites->End();
 
     // Draw 3D object
 	//XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation(-2.f, -2.f, 4.f));
