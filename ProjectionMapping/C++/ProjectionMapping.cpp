@@ -787,7 +787,7 @@ void Render()
 	}
 
 	static int ringModeCounter = 0;
-	const int WHITE_COUNTER = 500;
+	const int WHITE_COUNTER = 800;
 	static int whiteModeCounter = 0;
 	const int ROTATE_COUNTER = 100;
 	static int rotateModeCounter = 0;
@@ -834,7 +834,7 @@ void Render()
 	FLOAT offsetR = -10;
 	FLOAT radius = g_Radius * ratioVertical + offsetR ;
 	FLOAT circleWidth = 5.0f;
-	if (whiteModeCounter <= WHITE_COUNTER / 2)
+	if (whiteModeCounter <= WHITE_COUNTER / 8)
 	{
 		DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, 100, circleWidth, Colors::Silver);
 	}
@@ -848,7 +848,7 @@ void Render()
 		ringModeCounter = 0;
 		whiteModeCounter = 0;
 	}
-	if (whiteModeCounter <= WHITE_COUNTER / 2)
+	if (whiteModeCounter <= WHITE_COUNTER / 8)
 	{
 		DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, percent, circleWidth, Colors::GreenYellow);
 	}
