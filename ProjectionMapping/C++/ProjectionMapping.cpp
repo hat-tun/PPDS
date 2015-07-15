@@ -789,7 +789,7 @@ void Render()
 	static int ringModeCounter = 0;
 	const int WHITE_COUNTER = 800;
 	static int whiteModeCounter = 0;
-	const int ROTATE_COUNTER = 100;
+	const int ROTATE_STAY_COUNTER = 3000;
 	static int rotateModeCounter = 0;
 
 	// Rotate cube around the origin
@@ -847,6 +847,7 @@ void Render()
 		percent = 0;
 		ringModeCounter = 0;
 		whiteModeCounter = 0;
+		rotateModeCounter = 0;
 	}
 	if (whiteModeCounter <= WHITE_COUNTER / 8)
 	{
@@ -903,13 +904,19 @@ void Render()
     //g_Shape->Draw( local, g_View, g_Projection, Colors::White, g_pTextureRV1 );
 
     XMVECTOR qid = XMQuaternionIdentity();
+	const FLOAT ACCEL = 10000.f;
+	FLOAT flyOffset = 0.f;
+	if (rotateModeCounter > ROTATE_STAY_COUNTER)
+	{
+		flyOffset = (rotateModeCounter - ROTATE_STAY_COUNTER) * (rotateModeCounter - ROTATE_STAY_COUNTER) / ACCEL;
+	}
 
 	const int COUNT_MAX = 500;
 	if (ringModeCounter > 0)
 	{
 		FLOAT scaleRatio = radius / 700.0f;
 		const XMVECTORF32 scale = { scaleRatio, scaleRatio, scaleRatio };
-		FLOAT offset = 20.f * ( 1.f - (FLOAT)ringModeCounter / COUNT_MAX);
+		FLOAT offset = 20.f * ( 1.f - (FLOAT)ringModeCounter / COUNT_MAX) + flyOffset;
 		const XMVECTORF32 translate = { 40.f * center.x / ProjectorWidth - 20.f, 30.0f * (1.f - abs(center.y - radius) / ProjectorHeight) - 15.f + offset, 0 };
 		XMVECTOR rotate = XMQuaternionRotationRollPitchYaw(0, 0, 0);
 		XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, translate));
@@ -932,16 +939,20 @@ void Render()
 	if (whiteModeCounter > 0)
 	{
 		whiteModeCounter++;
-		if (whiteModeCounter > WHITE_COUNTER / 2)
+		if (whiteModeCounter > WHITE_COUNTER / 2 )
 		{
 			// display ring model
 			FLOAT scaleRatio = radius / 400.0f;
 			const XMVECTORF32 scale = { scaleRatio, scaleRatio, scaleRatio };
-			FLOAT offset = 20.f * (1.f - (FLOAT)ringModeCounter / COUNT_MAX);
+			FLOAT offset = 20.f * (1.f - (FLOAT)ringModeCounter / COUNT_MAX) + flyOffset;
 			const XMVECTORF32 translate = { 40.f * center.x / ProjectorWidth - 20.f, 30.0f * (1.f - center.y / ProjectorHeight) - 15.f + offset, 0 };
 			XMVECTOR rotate = XMQuaternionRotationRollPitchYaw(0, 0, 0);
 			XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, translate));
 			g_RingModel->Draw(g_pImmediateContext, *g_States, local, g_View, g_Projection);
+		}
+		if (whiteModeCounter > WHITE_COUNTER)
+		{
+			rotateModeCounter++;
 		}
 	}
 
