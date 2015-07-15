@@ -18,6 +18,7 @@
 //#define WINDOW_PROJECTOR 
 #define KINNECT
 #define DXTK_AUDIO
+//#define PPDS_MODE
 
 #include <windows.h>
 
@@ -872,9 +873,11 @@ void Render()
 				if (percent == 100)
 				{
 					// sound SE
+#if defined PPDS_MODE
 					g_soundFullEffect->Play();
 					ringModeCounter = 1;
 					g_effect2->Play(true);
+#endif
 				}
 			}
 		}
