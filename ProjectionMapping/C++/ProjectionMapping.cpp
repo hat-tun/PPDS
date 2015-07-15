@@ -78,6 +78,7 @@ std::unique_ptr<BasicEffect>                            g_BatchEffect;
 std::unique_ptr<EffectFactory>                          g_FXFactory;
 std::unique_ptr<GeometricPrimitive>                     g_Shape;
 std::unique_ptr<Model>                                  g_Model;
+std::unique_ptr<Model>                                  g_RingModel;
 std::unique_ptr<PrimitiveBatch<VertexPositionColor>>    g_Batch;
 std::unique_ptr<SpriteBatch>                            g_Sprites;
 std::unique_ptr<SpriteFont>                             g_Font;
@@ -395,6 +396,7 @@ HRESULT InitDevice()
     g_Shape = GeometricPrimitive::CreateTeapot( g_pImmediateContext, 4.f, 8, false );
 
     g_Model = Model::CreateFromCMO( g_pd3dDevice, L"dmd.cmo", *g_FXFactory, true );
+    g_RingModel = Model::CreateFromCMO( g_pd3dDevice, L"ring.cmo", *g_FXFactory, true );
 
     // Load the Texture
     hr = CreateDDSTextureFromFile( g_pd3dDevice, L"seafloor.dds", nullptr, &g_pTextureRV1 );
@@ -803,6 +805,12 @@ void Render()
     const XMVECTORF32 yaxis = { 0.f, 20.f, 0.f };
     DrawGrid( *g_Batch, xaxis, yaxis, g_XMZero, 20, 20, Colors::Gray );
 
+	static int ringModeCounter = 0;
+	const int WHITE_COUNTER = 100;
+	static int whiteModeCounter = 0;
+	const int ROTATE_COUNTER = 100;
+	static int rotateModeCounter = 0;
+
 	// Draw Circle
 	FLOAT ratioVertical = ProjectorHeight / g_Cal.height;
 	FLOAT ratioHorizontal = ProjectorWidth / g_Cal.width;
@@ -812,9 +820,11 @@ void Render()
 	FLOAT offsetR = -10;
 	FLOAT radius = g_Radius * ratioVertical + offsetR ;
 	FLOAT circleWidth = 5.0f;
-	DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, 100, circleWidth, Colors::Silver);
+	if (whiteModeCounter <= WHITE_COUNTER / 2)
+	{
+		DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, 100, circleWidth, Colors::Silver);
+	}
 
-	static int ringModeCounter = 0;
 
 	// indicator
 	static FLOAT percent = 0;
@@ -823,8 +833,10 @@ void Render()
 		percent = 0;
 		ringModeCounter = 0;
 	}
-	DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, percent, circleWidth, Colors::GreenYellow);
-
+	if (whiteModeCounter <= WHITE_COUNTER / 2)
+	{
+		DrawCircle(*g_Sprites, g_pTextureRV2, center, radius, percent, circleWidth, Colors::GreenYellow);
+	}
 
 
 #ifdef DXTK_AUDIO
@@ -898,6 +910,23 @@ void Render()
 			g_soundFullEffect->Play();
 			g_soundFinishEffect->Play();
 			ringModeCounter++;
+			whiteModeCounter++;
+		}
+	}
+
+	if (whiteModeCounter > 0)
+	{
+		whiteModeCounter++;
+		if (whiteModeCounter > WHITE_COUNTER / 2)
+		{
+			// display ring model
+			FLOAT scaleRatio = radius / 400.0f;
+			const XMVECTORF32 scale = { scaleRatio, scaleRatio, scaleRatio };
+			FLOAT offset = 20.f * (1.f - (FLOAT)ringModeCounter / COUNT_MAX);
+			const XMVECTORF32 translate = { 40.f * center.x / ProjectorWidth - 20.f, 30.0f * (1.f - center.y / ProjectorHeight) - 15.f + offset, 0 };
+			XMVECTOR rotate = XMQuaternionRotationRollPitchYaw(0, 0, 0);
+			XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTransformation(g_XMZero, qid, scale, g_XMZero, rotate, translate));
+			g_RingModel->Draw(g_pImmediateContext, *g_States, local, g_View, g_Projection);
 		}
 	}
 

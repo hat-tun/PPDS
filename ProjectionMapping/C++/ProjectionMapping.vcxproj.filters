@@ -32,6 +32,9 @@
     <MeshContentTask Include="dmd.fbx">
       <Filter>Resource Files</Filter>
     </MeshContentTask>
+    <MeshContentTask Include="ring.fbx">
+      <Filter>Resource Files</Filter>
+    </MeshContentTask>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

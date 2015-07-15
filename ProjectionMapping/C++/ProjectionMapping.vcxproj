@@ -387,6 +387,9 @@
       <FileType>Document</FileType>
       <ContentOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)\..\%(Filename).cmo</ContentOutput>
     </MeshContentTask>
+    <MeshContentTask Include="ring.fbx">
+      <ContentOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)\..\%(Filename).cmo</ContentOutput>
+    </MeshContentTask>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
