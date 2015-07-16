@@ -58,7 +58,11 @@ struct CalibrationParameter
 	int startY;
 	int width;
 	int height;
+	int depthAt05;
+	int depthAt20;
 };
+
+
 
 
 class CDepthBasics

@@ -115,6 +115,7 @@ XMMATRIX                            g_Projection;
 FLOAT g_CenterX = 0.f;
 FLOAT g_CenterY = 0.f;
 FLOAT g_Radius = 0.f; 
+INT g_Depth = 0;
 
 #if defined (CALIBRATION)
 int g_CalibrationStartX = 0;
@@ -126,17 +127,31 @@ int g_CalibrationHeight = 1000;
 // Calibration info
 CalibrationParameter g_Cal = 
 {
-	190, //startX
-	25,  //startY
-	147, //width
-	161, //height
+	//190, //startX
+	//174, //startX v2
+	220, //startX v3
+	100,  //startY
+	//147, //width
+	160, //width
+	155, //height
+	255, //depthAt05
+	180, //depthAt20
 };
+
+// Cal mode to param
+//// startX = outX * 512 / 1920
+// startX = (1 - outX /1920) * 512 - width
+// startY = outY * 424 / 1080
+// width = outW * 512 / 1920
+// height = outH * 424 / 1920
 
 // Projector screen size
 const int ProjectorWidth = 1600;
 //const int ProjectorWidth = 800;
 const int ProjectorHeight = 1200;
 //const int ProjectorHeight = 600;
+
+
 
 
 //--------------------------------------------------------------------------------------
@@ -501,7 +516,7 @@ HRESULT InitOpencv(ParamSet& param)
 	param.circle.dp = 1;
 	param.circle.minDist = 200;
 	param.circle.param1 = 10;
-	param.circle.param2 = 20;
+	param.circle.param2 = 23;
 	param.circle.minRadius = 10;
 	param.circle.maxRadius = 200;
 #if 0
@@ -829,8 +844,16 @@ void Render()
 	// Draw Circle
 	FLOAT ratioVertical = ProjectorHeight / g_Cal.height;
 	FLOAT ratioHorizontal = ProjectorWidth / g_Cal.width;
-	FLOAT offsetX = 80;
-	FLOAT offsetY = -30;
+	FLOAT offsetX = 0;
+	FLOAT offsetY = 0;
+	if (abs(g_Depth - g_Cal.depthAt20) != 0)
+	{
+		//offsetY = 40* abs(g_Depth - g_Cal.depthAt05) / abs(g_Depth - g_Cal.depthAt20);
+		offsetX = -300 * (1 - abs(g_Depth - g_Cal.depthAt20) / (g_Cal.depthAt05 - g_Cal.depthAt20));
+		//offsetX =  -5* abs(g_Depth - g_Cal.depthAt05) / abs(g_Depth - g_Cal.depthAt20);
+		offsetY = 40 * (1 - abs(g_Depth - g_Cal.depthAt20) / (g_Cal.depthAt05 - g_Cal.depthAt20));
+	}
+	
 	XMFLOAT2 center = XMFLOAT2((g_Cal.width - g_CenterX) * ratioHorizontal + offsetX, (g_CenterY + offsetY) * ratioVertical);
 	FLOAT offsetR = -10;
 	FLOAT radius = g_Radius * ratioVertical + offsetR ;
@@ -894,13 +917,18 @@ void Render()
 
 #endif // DXTK_AUDIO
 
+#if defined (CALIBRATION)
 	// Draw sprite
-    //g_Sprites->Begin( SpriteSortMode_Deferred );
+	g_Sprites->Begin( SpriteSortMode_Deferred );
 	//RECT rect = { 0, 0, 10, 10 };
 	//g_Sprites->Draw(g_pTextureRV2, XMFLOAT2(10, 75), &rect, Colors::White);
 
 	//g_Font->DrawString(g_Sprites.get(), L"DirectXTK ProjectionMapping", XMFLOAT2(100, 10), Colors::Yellow);
-	//g_Sprites->End();
+	wchar_t depthStr[100];
+	wsprintf(depthStr, L"depth = %d\n", g_Depth);
+	g_Font->DrawString(g_Sprites.get(), depthStr, XMFLOAT2(100, 10), Colors::Yellow);
+	g_Sprites->End();
+#endif
 
     // Draw 3D object
 	//XMMATRIX local = XMMatrixMultiply(g_World, XMMatrixTranslation(-2.f, -2.f, 4.f));

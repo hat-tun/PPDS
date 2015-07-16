@@ -28,6 +28,7 @@ inline void SafeRelease(Interface *& pInterfaceToRelease)
 extern FLOAT g_CenterX;
 extern FLOAT g_CenterY;
 extern FLOAT g_Radius;
+extern INT g_Depth;
 
 #if defined (CALIBRATION)
 extern int g_CalibrationStartX;
@@ -325,7 +326,12 @@ void CDepthBasics::Update(ParamSet& param)
 			cv::Mat roiMat(depthMat, cv::Rect(g_Cal.startX, g_Cal.startY, g_Cal.width, g_Cal.height));
 			cv::rectangle(depthMat, cv::Point(g_Cal.startX, g_Cal.startY),
 				cv::Point(g_Cal.startX + g_Cal.width, g_Cal.startY + g_Cal.height), cv::Scalar(255), 3, CV_AA);
-			
+
+			// Get the depth at point
+			int x = g_Cal.startX + g_CenterX;
+			int y = g_Cal.startY + g_CenterY;
+			g_Depth = depthMat.data[x + y * cDepthWidth];
+
 			cv::Mat binMat;
 			cv::threshold(roiMat, binMat, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 			//cv::threshold(roiMat, binMat, param.binThresh, 255, cv::THRESH_BINARY);
@@ -442,7 +448,7 @@ void CDepthBasics::Update(ParamSet& param)
 			cv::imshow("Edge", edgeMat);
 			cv::imshow("Binary", binMat);
 			//cv::imshow("Depth", ~roiMat);
-			cv::imshow("Depth", depthMat);
+			cv::imshow("Depth", ~depthMat);
 			cv::imshow("Result", resultMat);
 		}
 
