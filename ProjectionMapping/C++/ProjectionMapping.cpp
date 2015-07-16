@@ -930,10 +930,12 @@ void Render()
 		}
 		else if (ringModeCounter == COUNT_MAX)
 		{
+#if defined (DXTK_AUDIO)
 			g_effect2->Pause();
 			g_effect1->Pause();
 			g_soundFullEffect->Play();
 			g_soundFinishEffect->Play();
+#endif
 			ringModeCounter++;
 			whiteModeCounter++;
 		}
