@@ -18,7 +18,7 @@
 //#define WINDOW_PROJECTOR 
 #define KINNECT
 #define DXTK_AUDIO
-//#define PPDS_MODE
+
 
 #include <windows.h>
 
@@ -114,8 +114,14 @@ XMMATRIX                            g_Projection;
 
 FLOAT g_CenterX = 0.f;
 FLOAT g_CenterY = 0.f;
+FLOAT g_CenterStableX = 0.f;
+FLOAT g_CenterStableY = 0.f;
 FLOAT g_Radius = 0.f; 
 INT g_Depth = 0;
+int whiteCounter = 0;
+int rotateCounter = 0;
+
+bool g_ppdsEnable = true;
 
 #if defined (CALIBRATION)
 int g_CalibrationStartX = 0;
@@ -212,6 +218,15 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			Update(kinect, param);
             Render();
         }
+		//int key = cv::waitKey(1);
+		//if (key == 'p')
+		//{
+		//	g_ppdsEnable = true;
+		//}
+		//else if (key == 'n')
+		//{
+		//	g_ppdsEnable = false;
+		//}
     }
 
     CleanupDevice();
@@ -848,6 +863,7 @@ void Render()
 	FLOAT offsetY = 0;
 	if (abs(g_Depth - g_Cal.depthAt20) != 0)
 	{
+
 		//offsetY = 40* abs(g_Depth - g_Cal.depthAt05) / abs(g_Depth - g_Cal.depthAt20);
 		offsetX = -300 * (1 - abs(g_Depth - g_Cal.depthAt20) / (g_Cal.depthAt05 - g_Cal.depthAt20));
 		//offsetX =  -5* abs(g_Depth - g_Cal.depthAt05) / abs(g_Depth - g_Cal.depthAt20);
@@ -871,7 +887,9 @@ void Render()
 		percent = 0;
 		ringModeCounter = 0;
 		whiteModeCounter = 0;
+		whiteCounter = 0;
 		rotateModeCounter = 0;
+		rotateCounter = 0;
 	}
 	if (whiteModeCounter <= WHITE_COUNTER / 8)
 	{
@@ -896,11 +914,12 @@ void Render()
 				if (percent == 100)
 				{
 					// sound SE
-#if defined PPDS_MODE
-					g_soundFullEffect->Play();
-					ringModeCounter = 1;
-					g_effect2->Play(true);
-#endif
+					if (g_ppdsEnable)					
+					{
+						g_soundFullEffect->Play();
+						ringModeCounter = 1;
+						g_effect2->Play(true);
+					}
 				}
 			}
 		}
@@ -966,6 +985,7 @@ void Render()
 #endif
 			ringModeCounter++;
 			whiteModeCounter++;
+			whiteCounter = whiteModeCounter;
 		}
 	}
 
@@ -986,6 +1006,7 @@ void Render()
 		if (whiteModeCounter > WHITE_COUNTER)
 		{
 			rotateModeCounter++;
+			rotateCounter = rotateModeCounter;
 		}
 	}
 

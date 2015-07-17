@@ -30,6 +30,10 @@ extern FLOAT g_CenterY;
 extern FLOAT g_Radius;
 extern INT g_Depth;
 
+extern int whiteCounter;
+extern int rotateCounter;
+const int ROTATE_MAX = 10000;
+
 #if defined (CALIBRATION)
 extern int g_CalibrationStartX;
 extern int g_CalibrationStartY;
@@ -330,7 +334,10 @@ void CDepthBasics::Update(ParamSet& param)
 			// Get the depth at point
 			int x = g_Cal.startX + g_CenterX;
 			int y = g_Cal.startY + g_CenterY;
-			g_Depth = depthMat.data[x + y * cDepthWidth];
+			if (whiteCounter == 0  || rotateCounter > ROTATE_MAX)
+			{
+				g_Depth = depthMat.data[x + y * cDepthWidth];
+			}
 
 			cv::Mat binMat;
 			cv::threshold(roiMat, binMat, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
@@ -424,24 +431,27 @@ void CDepthBasics::Update(ParamSet& param)
 			}
 			else if (circleFailureCounter > 0)
 			{
-				//moving average
-				int sumX = 0;
-				int sumY = 0;
-				int sumR = 0;
-				for (int i = 0; i < AVE_BUFFER_MAX; i++)
+				if (whiteCounter == 0 || rotateCounter > ROTATE_MAX)
 				{
-					sumX += aveCirclePos[i].x;
-					sumY += aveCirclePos[i].y;
-					sumR += aveCircleRadius[i];
+					//moving average
+					int sumX = 0;
+					int sumY = 0;
+					int sumR = 0;
+					for (int i = 0; i < AVE_BUFFER_MAX; i++)
+					{
+						sumX += aveCirclePos[i].x;
+						sumY += aveCirclePos[i].y;
+						sumR += aveCircleRadius[i];
+					}
+
+					circlePos.x = sumX / AVE_BUFFER_MAX;
+					circlePos.y = sumY / AVE_BUFFER_MAX;
+					circleRadius = sumR / AVE_BUFFER_MAX;
+
+					g_CenterX = circlePos.x;
+					g_CenterY = circlePos.y;
+					g_Radius = circleRadius;
 				}
-
-				circlePos.x = sumX / AVE_BUFFER_MAX;
-				circlePos.y = sumY / AVE_BUFFER_MAX;
-				circleRadius = sumR / AVE_BUFFER_MAX;
-
-				g_CenterX = circlePos.x;
-				g_CenterY = circlePos.y;
-				g_Radius = circleRadius;
 				circle(resultMat, circlePos, circleRadius, cv::Scalar(255), 2);
 			}
 
